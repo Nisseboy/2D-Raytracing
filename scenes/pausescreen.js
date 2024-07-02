@@ -18,33 +18,20 @@ let PauseScreen = {
   
   update() {
     Renderer.buffer = lastGameFrame.map(e=>e);
-    let menuButtons = [
+    menuButtons = [
       {text: "continue", callback: PauseScreen.continueButton},
       {text: "exit", callback: PauseScreen.exitButton},
     ];
-    for (let i in menuButtons) {
-      let menuButton = menuButtons[i];
-
-      buttons.push({
-        text: menuButton.text,
-        x: 0,
-        y: 10 + i * 10,
-        align: "tl",
-        d: 0,
-  
-        color: [255, 255, 255],
-        hoverColor: [255, 0, 0],
-  
-        callback: menuButton.callback,
-      });
-    }
-    
   },
   continueButton(e) {
     setScene(Game);
   },
   exitButton(e) {
-    setScene(MainMenu);
+    if (inEditor) {
+      setScene(Editor);
+    } else {
+      setScene(MainMenu);
+    }
   },
   stop() {
 

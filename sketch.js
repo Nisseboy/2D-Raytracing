@@ -1,3 +1,5 @@
+p5.disableFriendlyErrors = true;
+
 let scene;
 
 let pixelSize;
@@ -12,7 +14,8 @@ let debug = true;
 
 let mousePos = {x: 0, y: 0};
 
-let buttons = []
+let buttons = [];
+let menuButtons = [];
 let hoveredButton;
 
 let controls = {
@@ -45,6 +48,9 @@ function setup() {
   Renderer.init(screenw, screenh);
 
   setScene(MainMenu);
+
+  Game.world = new World(1, 1);
+  setScene(Game);
   
   frameRate(fps);
 }
@@ -105,16 +111,34 @@ function mouseMoved(e) {
 function draw() {
   Renderer.buffer = [];
   buttons = [];
+  menuButtons = [];
   hoveredButton = undefined;
 
   if (scene.update) scene.update();
 
+  for (let i in menuButtons) {
+    let menuButton = menuButtons[i];
+
+    buttons.push({
+      text: menuButton.text,
+      x: 0 + (menuButton.dpos?.x || 0),
+      y: 10 + i * 10 + (menuButton.dpos?.y || 0),
+      align: menuButton.align || "tl",
+      d: 0,
+
+      color: [255, 255, 255],
+      hoverColor: [255, 0, 0],
+
+      callback: menuButton.callback || (() => {}),
+    });
+  }
+
   for (let i in buttons) {
     let button = buttons[i];
-    let bounds = Renderer.renderButton(button.text, button.x, button.y, button.align, button.d, button.color);
+    let bounds = Renderer.renderButton(button.text, button.x, button.y, button.align, button.d, button.color || [255, 255, 255]);
 
     if (mousePos.x > bounds.x && mousePos.y > bounds.y && mousePos.x < bounds.x + bounds.w && mousePos.y < bounds.y + bounds.h) {
-      Renderer.renderButton(button.text, button.x, button.y, button.align, button.d, button.hoverColor);
+      Renderer.renderButton(button.text, button.x, button.y, button.align, button.d, button.hoverColor || [255, 0, 0]);
       hoveredButton = button;
     }
   }

@@ -1,6 +1,25 @@
 let animals = {
-  player: {name: "player", type: "player", speed: 2, slotAmount: 4, bobSpeed: 0.2, bobStrength: 0.02, jumpStrength: 2},
-  rat: {name: "rat", type: "critter", texture: "rat", scale: 0.2, speed: 1, slotAmount: 1, bobSpeed: 0.2, bobStrength: 0.02, jumpStrength: 1}
+  player: {
+    name: "player", 
+    type: "player", 
+    speed: 2, 
+    height: 0.65,
+    slotAmount: 4, 
+    bobSpeed: 0.2, 
+    bobStrength: 0.02, 
+    jumpStrength: 1.8
+  },
+  rat: {
+    name: "rat", 
+    type: "critter", 
+    texture: "rat", 
+    height: 0.2,
+    speed: 1, 
+    slotAmount: 1, 
+    bobSpeed: 0.2, 
+    bobStrength: 0.02, 
+    jumpStrength: 1
+  },
 };
 
 class Entity {
@@ -20,17 +39,17 @@ class Entity {
     
     this.bob = 0;
 
-    this.floorHeight = 0;
+    this.seg = {bottom: 0, top: 1};
 
-    this.move({x: 0, y: 0});
+    //this.move({x: 0, y: 0});
 
   }
   
   update() {
     if (this.owner) return;
     
-    if (this.pos.z < this.floorHeight + 0.01) {
-      this.pos.z = this.floorHeight;
+    if (this.pos.z < this.seg.bottom + 0.01) {
+      this.pos.z = this.seg.bottom;
       this.vel.x *= 0.7;
       this.vel.y *= 0.7;
       if (this.vel.z < -1) { if (this.animal.type == "critter" || this.animal.type == "grenade") this.vel.z *= -0.4; }
@@ -41,7 +60,10 @@ class Entity {
     
     this.move(this.vel, true);
     
-    if (this.pos.z > this.floorHeight + 0.01) return;
+    if (this.pos.z > this.seg.top - this.animal.height - 0.05)  {
+      this.pos.z = this.seg.top - this.animal.height - 0.05;
+      this.vel.z = 0;
+    }
     
     switch(this.animal.type) {
       case "critter":
@@ -64,7 +86,7 @@ class Entity {
     if (!entity) return;
     entity.owner = undefined;
     entity.pos = {x: this.pos.x, y: this.pos.y, z: this.pos.z + 0.4};
-    entity.vel = {x: Math.cos(this.dir.x) * force, y: Math.sin(this.dir.x) * force, z: Math.cos(this.dir.y) * force};
+    entity.vel = {x: Math.cos(this.dir.x) * force, y: Math.sin(this.dir.x) * force, z: Math.cos(this.dir.y + Math.PI / 2) * force  + 1};
     
     this.slots[slot] = undefined;
   }
@@ -79,10 +101,10 @@ class Entity {
   }
   
   jump() {
-    if (this.pos.z > this.floorHeight + 0.01) return;
+    if (this.pos.z > this.seg.bottom + 0.01) return;
 
     this.vel.z = this.animal.jumpStrength;
-    this.pos.z = this.floorHeight + 0.01;
+    this.pos.z = this.seg.bottom + 0.01;
   }
   moveRelative(v, cheatMove = false) {
     this.move(rotateVector(v, this.dir.x), cheatMove);
@@ -142,6 +164,7 @@ class Entity {
       gridPosNew.y = Math.floor(this.pos.y);
     }
 
-    this.floorHeight = Game.world.segments[Game.world.get(Math.floor(this.pos.x), Math.floor(this.pos.y))[0]].bottom;
+    let seg = Game.world.segments[Game.world.get(Math.floor(this.pos.x), Math.floor(this.pos.y))[0]];
+    this.seg = seg;
   }
 }

@@ -9,46 +9,19 @@ let slotSize = 12;
 
 let fov = Math.PI / 2;
 let player;
-let playerHeight = 0.65;
 
 let Game = {
   init() {
-    Game.world = new World(5, 5);
 
-    Game.world.walls = [
-      {},
-      {texture: "brick_wall1"},
-      {texture: "brick_wall2"},
-      {texture: "brick_wall3"},
-      {texture: "brick_wall4"},
-      {texture: "brick_wall5"},
-      {texture: "brick_wall6"},
-      {texture: "brick_wall_window"},
-    ];
-
-    Game.world.segments = [
-      {bottom: 0, top: 1, ceilingTexture: "brick_wall1", floorTexture: "brick_wall2", topWallTexture: "brick_wall1", bottomWallTexture: "brick_wall1"},
-      {bottom: 0, top: 1, ceilingTexture: "brick_wall1", floorTexture: "brick_wall2", topWallTexture: "brick_wall1", bottomWallTexture: "brick_wall1"},
-    ];
-
-    Game.world.entities = [
-      {animalType: "player", pos: {x: 0.5, y: 0.5}},
-      {animalType: "rat", pos: {x: 2, y: 2}},
-    ];
-
-
-
-    
-    Game.world.init();
-
-    Game.world.set(0, 1, 1, 7);
-    //Game.world.set(0, 0, 0, 1);
-    
-    player = Game.world.entities[0];
-    player.dir.x += 0.001;
   },
   start() {
     requestPointerLock();
+
+    if (!Game.world.hasInit) {
+      Game.world.init();
+    }
+  
+    player = Game.world.entities[0];
   },
   keyPressed(e) {
     if (getKeyPressed("Slot 1")) player.slot = 0;
@@ -72,27 +45,30 @@ let Game = {
   mousePressed() {
     requestPointerLock();
   
+    if (!Game.world.simulated) return;
     let held = player.slots[player.slot];
     if (held) held.fire();
   },
   mouseWheel(e) {
-    player.slot = (player.slot + Math.sign(e.delta) + player.slotAmount) % player.slotAmount;
+    player.slot = (player.slot + Math.sign(e.delta) + player.animal.slotAmount) % player.animal.slotAmount;
   },
   update() {
     player.moveRelative({x: getKeyPressed("Walk Forward") - getKeyPressed("Walk Back"), y: getKeyPressed("Walk Right") - getKeyPressed("Walk Left")});
     
     let closestAngle = Math.PI;
     highlighted = undefined;
-    for (let i in Game.world.entities) {
-      let entity = Game.world.entities[i];
-      entity.update();
-      
-      let diff = {x: entity.pos.x - player.pos.x, y: entity.pos.y - player.pos.y}
-      let sqd = diff.x * diff.x + diff.y * diff.y;
-      let angle = Math.atan2(diff.y, diff.x) - player.dir.x;
-      if ((entity.animal.type == "critter" || entity.animal.type == "grenade") && angle < reachAngle && sqd < reach * reach && angle < closestAngle) {
-        closestAngle = angle;
-        highlighted = entity;
+    if (Game.world.simulated) {
+      for (let i in Game.world.entities) {
+        let entity = Game.world.entities[i];
+        entity.update();
+        
+        let diff = {x: entity.pos.x - player.pos.x, y: entity.pos.y - player.pos.y}
+        let sqd = diff.x * diff.x + diff.y * diff.y;
+        let angle = Math.atan2(diff.y, diff.x) - player.dir.x;
+        if ((entity.animal.type == "critter" || entity.animal.type == "grenade") && angle < reachAngle && sqd < reach * reach && angle < closestAngle) {
+          closestAngle = angle;
+          highlighted = entity;
+        }
       }
     }
     player.update();
@@ -109,8 +85,8 @@ let Game = {
     if (held) {
       Renderer.renderTexture(held.animal.texture, (screenw - 20) / 2, screenh - 40, "tl", 20, 40, 0.1);
     }
-    
-    Renderer.renderTexture("crosshair", screenw / 2, screenh / 2, "cc", Renderer.textures.crosshair.width,  Renderer.textures.crosshair.height, 0);
+
+    Renderer.renderTexture("crosshair", screenw / 2, screenh / 2, "cc", textures.crosshair.width,  textures.crosshair.height, 0);
     
     if (highlighted) {
       Renderer.renderText(`press [${getControlName("Interact")}] to pick up ${highlighted.animal.name}`, screenw / 2, screenh / 2, "bc");

@@ -1,66 +1,13 @@
+let fogA = 0.8;
+let fogB = 1;
+
 let Renderer = {
-  textures: {
-    empty: {pixels: [0, 0, 0, 0], width: 1, height: 1},
-    brick_wall1: "assets/images/brick_wall/1.png",
-    brick_wall2: "assets/images/brick_wall/2.png",
-    brick_wall3: "assets/images/brick_wall/3.png",
-    brick_wall4: "assets/images/brick_wall/4.png",
-    brick_wall5: "assets/images/brick_wall/5.png",
-    brick_wall6: "assets/images/brick_wall/6.png",
-    brick_wall_window: "assets/images/brick_wall/window.png",
-    rat: "assets/images/entities/rat/rat.png",
-    crosshair: "assets/images/crosshair.png",
-  },
-
-  font: {
-    "a": "010101111101101",
-    "b": "110101110101110",
-    "c": "011100100100011",
-    "d": "110101101101110",
-    "e": "111100110100111",
-    "f": "111100110100100",
-    "g": "011100101101011",
-    "h": "101101111101101",
-    "i": "010010010010010",
-    "j": "001001001101010",
-    "k": "101101110101101",
-    "l": "100100100100111",
-    "m": "101111101101101",
-    "n": "110101101101101",
-    "o": "010101101101010",
-    "p": "110101101110100",
-    "q": "010101101101011",
-    "r": "110101110101101",
-    "s": "011100010001110",
-    "t": "111010010010010",
-    "u": "101101101101111",
-    "v": "101101101010010",
-    "w": "101101101111101",
-    "x": "101101010101101",
-    "y": "101101010010010",
-    "z": "111001010100111",
-    "0": "010101101101010",
-    "1": "010110010010111",
-    "2": "010101001010111",
-    "3": "110001110001110",
-    "4": "101101111001001",
-    "5": "111100110001110",
-    "6": "010100110101010",
-    "7": "111001001010010",
-    "8": "010101010101010",
-    "9": "010101011001010",
-    "[": "111100100100111",
-    "]": "111001001001111",
-    " ": "000000000000000",
-    "rect": "111111111111111"
-  },
-
   buffer: [],
 
   preload() {
-    for (let i in Renderer.textures) {
-      if (typeof(Renderer.textures[i]) != "string") continue;
-      Renderer.textures[i] = loadImage(Renderer.textures[i]);
+    for (let i in textures) {
+      if (typeof(textures[i]) != "string") continue;
+      textures[i] = loadImage(textures[i]);
     }
   },
 
@@ -68,8 +15,8 @@ let Renderer = {
     Renderer.img = createImage(w, h);
     Renderer.img.loadPixels();
   
-    for (let i in Renderer.textures) {
-      let tex = Renderer.textures[i];
+    for (let i in textures) {
+      let tex = textures[i];
       if (tex.loadPixels) tex.loadPixels();
       tex.transparent = false;
 
@@ -105,9 +52,9 @@ let Renderer = {
         }
 
         let index = (Math.floor((x - X) % 4) + Math.floor((y - Y) % 5) * 3);
-        let char = Renderer.font[string[Math.floor((x - X) / 4)]];
+        let char = font[string[Math.floor((x - X) / 4)]];
         
-        if (char == undefined) char = Renderer.font.rect;
+        if (char == undefined) char = font.rect;
 
         let clr = [
           c[0],
@@ -140,7 +87,8 @@ let Renderer = {
   renderWorld() {
     let focusPlane = screenw / 2 / Math.tan(fov / 2);
     let yShear = Math.tan(player.dir.y) * focusPlane;
-
+    let dFactor = (Math.sin(player.bob) * player.animal.bobStrength - player.pos.z - player.animal.height + 0.5);
+    
     for (let x = 0; x < screenw; x++) {
       let relativeAngle = Math.atan((x - screenw / 2) / focusPlane);
       
@@ -148,12 +96,10 @@ let Renderer = {
       for (let i = 0; i < infos.length; i++) {
         let info = infos[i];
         let d = info.d * Math.cos(relativeAngle);
-        let oldD = info.oldD * Math.cos(relativeAngle);
-        let yShearReal = yShear + (Math.sin(player.bob) * player.animal.bobStrength - player.pos.z - playerHeight + 0.5) * focusPlane / d;
+        let yShearReal = yShear + dFactor * focusPlane / d;
       
         let size = focusPlane / d * 0.01;
-        let sizeOld = focusPlane / info.oldD * 0.01;
-        let wallFog = Math.max(Math.pow(d, 1), 1) + info.isHorizontal * 0.3;
+        let wallFog = Math.max(Math.pow(d, fogA), fogB) + info.isHorizontal * 0.3;
         
         let segment = Game.world.segments[info.segment];
         let oldSegment = Game.world.segments[info.oldSegment];
@@ -163,139 +109,134 @@ let Renderer = {
         let top;
         let bottom;
         if (segment) {
-          tex = Renderer.textures[info.wall == undefined ? segment.ceilingTexture : Game.world.walls[info.wall].texture];
+          tex = textures[info.wall == undefined ? segment.ceilingTexture : Game.world.walls[info.wall].texture];
           top = segment.top;
           bottom = segment.bottom;
         } else {
-          tex = Renderer.textures[info.top ? newSegment.topWallTexture : newSegment.bottomWallTexture];
+          tex = textures[info.top ? newSegment.topWallTexture : newSegment.bottomWallTexture];
           top = info.top?oldSegment.top:newSegment.bottom;
           bottom = info.top?newSegment.top:oldSegment.bottom;
         }
 
         let col = [];
-        if (info.ceiling) {
-          for (let Y = 0; Y < screenh; Y++) {
-            let y = Y + Math.floor(yShearReal);
-            let c = [0, 0, 0, 0];
-
-            let deltaCenter = y / screenh - 0.5;
-            let vTop = (0.5 - top) * sizeOld;
-            let vBottom = (0.5 - top) * size;
-            let vDist = d + (oldD - d) * (deltaCenter - vBottom) / (vTop - vBottom);
-            vDist = Math.sqrt(((Y + Math.floor(yShear)) / screenh - 0.5) * -2);
-
-            let uv = {u: (Math.cos(player.dir.x + relativeAngle) * vDist + 1000) % 1, v: (Math.sin(player.dir.x + relativeAngle) * vDist + 1000) % 1};
-            
-            if (deltaCenter < vBottom) {
-              let index = (Math.floor(uv.u * tex.width) + Math.floor(uv.v * tex.height) * tex.width) * 4;
-              c[0] = tex.pixels[index  ];
-              c[1] = tex.pixels[index+1];
-              c[2] = tex.pixels[index+2];
-              c[3] = tex.pixels[index+3];
-              c = [uv.u * 255, uv.v * 255, 0, 255]
-              //c = [vDist * 255, 0, 0, 255];
-            } else {
-              c = [255, 0, 0, 0];
-            }
-            
-            col.push([c[0], c[1], c[2], c[3]]);
-          }
-        } else {
   
-          let uv = {u: info.uv, v: 0};
+        let uv = {u: info.uv, v: 0};
           
-          for (let Y = 0; Y < screenh; Y++) {
-            let y = Y + Math.floor(yShearReal);
-            let deltaCenter = y / screenh - 0.5;
-            uv.v = (deltaCenter / size + 0.5 + top - 1) / (top - bottom);
-            let c = [];
-            
-            if (deltaCenter < (0.5 - bottom) * size && deltaCenter > (0.5 - top) * size) {
-              let index = (Math.floor(uv.u * tex.width) + Math.floor(uv.v * tex.height) * tex.width) * 4;
-              c[0] = tex.pixels[index  ] / wallFog;
-              c[1] = tex.pixels[index+1] / wallFog;
-              c[2] = tex.pixels[index+2] / wallFog;
-              c[3] = tex.pixels[index+3];
-            } else {
-              let ceilingFog = 1 / Math.abs(deltaCenter);
-              c = [51 / ceilingFog, 51 / ceilingFog, 51 / ceilingFog, 255];
-              c = [0, 0, 0, 0];
-            }
-            
-            col.push([c[0], c[1], c[2], c[3]]);
+        for (let Y = 0; Y < screenh; Y++) {
+          let y = Y + Math.floor(yShearReal);
+          let deltaCenter = y / screenh - 0.5;
+          uv.v = (deltaCenter / size + 0.5 + top - 1) / (top - bottom);
+          let c = [0, 0, 0, 0];
+          
+          if (deltaCenter < (0.5 - bottom) * size && deltaCenter > (0.5 - top) * size) {
+            let index = (Math.floor(uv.u * tex.width) + Math.floor(uv.v * tex.height) * tex.width) * 4;
+            c[0] = tex.pixels[index  ] / wallFog;
+            c[1] = tex.pixels[index+1] / wallFog;
+            c[2] = tex.pixels[index+2] / wallFog;
+            c[3] = tex.pixels[index+3];
           }
+          
+          col.push([c[0], c[1], c[2], c[3]]);
         }
 
         Renderer.buffer.push({x: x, d: d, col: col});
       }
     }
+    
+    for (let segment of Game.world.segments) {
+      for (let y = 0; y < screenh; y++) {
+        let row = [];
+  
+        let langle = Math.atan(-screenw / 2 / focusPlane) + player.dir.x;
+        let rangle = Math.atan( screenw / 2 / focusPlane) + player.dir.x;
+  
+        let bottom = segment.bottom;
+        let top = segment.top;
 
-    for (let y = 0; y < screenh; y++) {
-      let row = [];
+        /*
+        x deltaCenter
+        y size
+        z top
+        w bottom
+        a y
+        b yShear
+        c screenh
+        d dFactor
+        e focusPlane
+        f 1 / (y / 0.01 / e)
 
-      let langle = Math.atan(-screenw / 2 / focusPlane) + player.dir.x;
-      let rangle = Math.atan( screenw / 2 / focusPlane) + player.dir.x;
+        0 = (((((a + b + ((d * e) / (1 / ((y / 0.01) / e)))) / c) - 0.5) / y) + 0.5 + z - 1) / (z - w);
+        y = (0.005c - 0.01a - 0.01b) / (-0.005c + d + 0.01cz)
 
-      let deltaCenter = (y + yShear) / screenh - 0.5;
-      if (deltaCenter == 0) deltaCenter = 0.00001;
-      let bottom = 0;
-      let top = 1;
+        1 = (((((a + b + ((d * e) / (1 / ((y / 0.01) / e)))) / c) - 0.5) / y) + 0.5 + z - 1) / (z - w);
+        y = (-c + 2a + 2b) / (c - 200d - 2cw)
+        */
 
-      let sizet = -(deltaCenter * 2) / (top * 2 - 1);
-      let dt = 1 / (sizet / 0.01 / focusPlane);
-      let sizeb = -(deltaCenter * 2) / (bottom * 2 - 1);
-      let db = 1 / (sizeb / 0.01 / focusPlane);
-      
-      let d = Math.max(dt, db);
-      let fog = Math.max(Math.pow(d, 1), 1);
+        let sizet = (screenh * 0.005 - y * 0.01 - yShear * 0.01) / (screenh * -0.005 + dFactor + screenh * top * 0.01);
+        let dt = 1 / (sizet / 0.01 / focusPlane);
+        let sizeb = ((y + yShear) * 2 - screenh) / (screenh - dFactor * 200 - screenh * bottom * 2);
+        let db = 1 / (sizeb / 0.01 / focusPlane);
 
-      let yShearReal = yShear + (Math.sin(player.bob) * player.animal.bobStrength - player.pos.z - playerHeight + 0.5) * focusPlane / d;
+        let d = Math.max(dt, db);
+        let fog = Math.max(Math.pow(d, fogA), fogB);
+  
+        let luv = {u: Math.cos(langle) * d, v: Math.sin(langle) * d};
+        let ruv = {u: Math.cos(rangle) * d, v: Math.sin(rangle) * d};
+  
+        for (let x = 0; x < screenw; x++) {
+          let scaling = 1 / 0.71;
+          let uv = {
+            u: (luv.u + (ruv.u - luv.u) * x / screenw)  * scaling + player.pos.x,
+            v: (luv.v + (ruv.v - luv.v) * x / screenw)  * scaling + player.pos.y
+          };
+          
+          if (uv.u < 0 || uv.u >= Game.world.w || uv.v < 0 || uv.v >= Game.world.h || isNaN(uv.u) || isNaN(uv.v) || d < 0) {
+            row.push([0, 0, 0, 0]);
+            continue;
+          }
+          //row.push([uv.u * 255, uv.v * 255, 0, 255]);
+          //continue;
+          
+          let segmentHere = Game.world.segments[Game.world.get(Math.floor(uv.u), Math.floor(uv.v))[0]];
+          //row.push([Game.world.get(Math.floor(uv.u), Math.floor(uv.v))[0] * 255, 0, 0, 255]);
+          //continue
+          if (segmentHere != segment) {
+            row.push([0, 0, 0, 0]);
+            continue;
+          }
 
-      let luv = {u: Math.cos(langle) * d, v: Math.sin(langle) * d};
-      let ruv = {u: Math.cos(rangle) * d, v: Math.sin(rangle) * d};
-
-      for (let x = 0; x < screenw; x++) {
-        let uv = {
-          u: (luv.u + (ruv.u - luv.u) * x / screenw + player.pos.x),
-          v: (luv.v + (ruv.v - luv.v) * x / screenw + player.pos.y)
-        };
-        
-        if (uv.u < 0 || uv.u >= Game.world.w || uv.v < 0 || uv.v >= Game.world.h) {
-          //debugger;
-          row.push([0, 0, 0, 0]);
-          continue;
+          let tex = textures[(d == dt) ? segment.ceilingTexture : segment.floorTexture];
+  
+          let c = [];
+          let index = (Math.floor((uv.u + 1000) % 1 * tex.width) + Math.floor((uv.v + 1000) % 1 * tex.height) * tex.width) * 4;
+          c[0] = tex.pixels[index  ] / fog;
+          c[1] = tex.pixels[index+1] / fog;
+          c[2] = tex.pixels[index+2] / fog;
+          c[3] = tex.pixels[index+3];
+  
+          //c = [uv.u * 255, uv.v * 255, 0, 255];
+          row.push(c);
         }
-        let segment = Game.world.segments[Game.world.get(Math.floor(uv.u), Math.floor(uv.v))[0]];
-        let tex = Renderer.textures[(d == dt) ? segment.ceilingTexture : segment.floorTexture];
-
-        let c = [];
-        let index = (Math.floor((uv.u + 1000) % 1 * tex.width) + Math.floor((uv.v + 1000) % 1 * tex.height) * tex.width) * 4;
-        c[0] = tex.pixels[index  ] / fog;
-        c[1] = tex.pixels[index+1] / fog;
-        c[2] = tex.pixels[index+2] / fog;
-        c[3] = tex.pixels[index+3];
-
-        //c = [uv.u * 255, uv.v * 255, 0, 255];
-        row.push(c);
+        Renderer.buffer.push({y: y, d: d, col: row});
       }
-      Renderer.buffer.push({y: y, d: d, col: row});
-    }
+    } 
   },
 
   renderEntities() {
     let focusPlane = screenw / 2 / Math.tan(fov / 2);
     let yShear = Math.tan(player.dir.y) * focusPlane;
+    let dFactor = (Math.sin(player.bob) * player.animal.bobStrength - player.pos.z - player.animal.height + 0.5);
 
     for (let i = 1; i < Game.world.entities.length; i++) {
       let entity = Game.world.entities[i];
       if (entity.owner) continue;
-      let tex = Renderer.textures[entity.animal.texture];
+      let tex = textures[entity.animal.texture];
       let relativePos = rotateVector({x: entity.pos.x - player.pos.x, y: entity.pos.y - player.pos.y}, -player.dir.x + Math.PI / 2);
       
       let d = relativePos.y;
-      let yShearReal = yShear + (Math.sin(player.bob) * player.animal.bobStrength - player.pos.z - playerHeight + 0.5) * focusPlane / d;
+      let yShearReal = yShear + dFactor * focusPlane / d;
       
-      let size = focusPlane / d * 0.01 * entity.animal.scale;
+      let size = focusPlane / d * 0.01 * entity.animal.height;
       if (size < 0) continue;
       let wallSize = focusPlane / d * 0.01;
       
@@ -308,15 +249,27 @@ let Renderer = {
     }
   },
 
+  renderRectangle(x1, y1, x2, y2, d = 0, c = [255, 255, 255, 255]) {
+    for (let x = x1; x <= x2; x++) {
+      let col = [];
+      for (let y = 0; y < screenh; y++) {
+        if (y >= y1 && y <= y2) col.push(c);
+        else col.push([0, 0, 0, 0]);
+      }
+      Renderer.buffer.push({x: x, d: d, col: col});
+    }
+  },
+
   renderTexture(tex, X, Y, align, w, h, d, highlight = false, highlightColor = [255, 255, 255, 255]) {
-    tex = Renderer.textures[tex];
+    tex = textures[tex];
 
     if (align[0] == "c") Y = Math.floor(Y - h / 2);
     if (align[0] == "b") Y = Math.floor(Y - h);
     if (align[1] == "c") X = Math.floor(X - w / 2);
     if (align[1] == "r") X = Math.floor(X - w);
 
-    let fog = Math.max(Math.pow(d, 1), 1);
+    let fog = Math.max(Math.pow(d, fogA), fogB);
+    if (isNaN(fog)) fog = 1;
     for (let x = 0; x < screenw; x++) {
       if (x < X || x >= X + w) {
         continue;
@@ -349,7 +302,7 @@ let Renderer = {
   },
 
   renderSlantedTexture(tex, tl, tr, bl, ld, rd) {
-    tex = Renderer.textures[tex];
+    tex = textures[tex];
 
     let w = tr.x - tl.x;
     let h = bl.y - tl.y;
@@ -364,7 +317,7 @@ let Renderer = {
 
     for (let x = atl.x; x < atr.x; x++) {
       let xU = (x - atl.x) / (atr.x - atl.x);
-      let fog = Math.max(Math.pow(ld + (rd - ld) * xU, 1), 1);
+      let fog = Math.max(Math.pow(ld + (rd - ld) * xU, fogA), fogB);
 
       let col = [];
       for (let y = 0; y < screenh; y++) {

@@ -8,6 +8,14 @@ class World {
       this.walls = world.walls;
       this.segments = world.segments;
       this.entities = world.entities;
+
+      for (let i = 0; i < this.entities.length; i++) {
+        let e = this.entities[i];
+        this.entities[i] = new Entity(e.animalType, e.pos);
+        if (e.dir) this.entities[i].dir = e.dir;
+        if (e.vel) this.entities[i].vel = e.vel;
+        if (e.slots) this.entities[i].slots = e.slots;
+      }
     } else {
       this.w = w;
       this.h = h;
@@ -25,24 +33,38 @@ class World {
       this.grid = new Array(w * 2).fill(undefined).map((e, x) => { return new Array(h * 2).fill(0) });
   
       this.walls = [];
-      this.segments = [];
-      this.entities = [];
+      this.segments = [{bottom: 0, top: 1, floorTexture: "metal/floor1", ceilingTexture: "metal/ceiling1", topWallTexture: "metal/ceiling1", bottomWallTexture: "metal/floor1"}];
+      this.entities = [{animalType: "player", pos: {x: 0.5, y: 0.5}}];
+
+      this.textures = ["metal/floor1", "metal/ceiling1", "metal/wall1", "rat"];
+      this.vertices = [{x: 0, y: 0}, {x: 1, y: 0}, {x: 1, y: 1}, {x: 0, y: 1}];
+      this.walls = [{
+        a: 0,
+        b: 1,
+        texture: 2,
+      },{
+        a: 1,
+        b: 2,
+        texture: 2,
+      },{
+        a: 2,
+        b: 3,
+        texture: 2,
+      },{
+        a: 3,
+        b: 0,
+        texture: 2,
+      },];
+      this.segments = [{bottom: 0, top: 1, floorTexture: 0, ceilingTexture: 1, topWallTexture: 1, bottomWallTexture: 0}];
+      this.entities = [new Entity("player", {x: 0.5, y: 0.5})];
     }
+
+    this.simulated = true;
   }
 
   init() {
-    for (let i = 0; i < this.entities.length; i++) {
-      let e = this.entities[i];
-      this.entities[i] = new Entity(e.animalType, e.pos);
-      if (e.dir) this.entities[i].dir = e.dir;
-      if (e.vel) this.entities[i].vel = e.vel;
-      if (e.slots) this.entities[i].slots = e.slots;
-    }
-
-    for (let x = 0; x < this.w; x++) this.set(x, 0, 1, 1 + Math.floor(Math.random() * 6));
-    for (let x = 0; x < this.w; x++) this.set(x, this.h - 1, 1, 1 + Math.floor(Math.random() * 6));
-    for (let y = 0; y < this.h; y++) this.set(0, y, 2, 1 + Math.floor(Math.random() * 6));
-    for (let y = 0; y < this.h; y++) this.set(this.w - 1, y - 1, 2, 1 + Math.floor(Math.random() * 6));
+    
+    this.hasInit = true;
   }
   
   get(x, y) {
@@ -78,8 +100,6 @@ class World {
 
     let blocked = false;
     let hits = [];
-
-    let oldD = 0;
     
     while (!blocked && pos.x >= 0 && pos.y >= 0 && pos.x < this.grid.length / 2 && pos.y < this.grid.length / 2) {
       let uv;
@@ -101,6 +121,7 @@ class World {
         isHorizontal = false;
       }
       
+      if (pos.x < 0 || pos.x >= this.w || pos.y < 0 || pos.y >= this.h) return hits;
 
       let d = Math.sqrt((pos.x-startPos.x)*(pos.x-startPos.x)+(pos.y-startPos.y)*(pos.y-startPos.y));
       let fPos = {x: Math.floor(pos.x), y: Math.floor(pos.y)};
@@ -123,8 +144,8 @@ class World {
           isHorizontal: isHorizontal,
         });
 
-        if (!Renderer.textures[this.walls[wall].texture].transparent) blocked = true;
-      } else {
+        if (!textures[this.walls[wall].texture].transparent) blocked = true;
+      } else if (newSegmentIndex != undefined) {
         let newSegment = this.segments[newSegmentIndex];
         let top = newSegment.top < oldSegment.top;
         let bottom = newSegment.bottom > oldSegment.bottom;
@@ -140,17 +161,6 @@ class World {
           });
         }
       }
-
-      
-      /*hits.push({
-        ceiling: true,
-        segment: segmentIndex,
-        oldD: oldD,
-        d: d,
-        uv: uv,
-      });*/
-
-      oldD = d;
     }
     return hits;
   }
