@@ -88,7 +88,107 @@ let Renderer = {
     let focusPlane = screenw / 2 / Math.tan(fov / 2);
     let yShear = Math.tan(player.dir.y) * focusPlane;
     let dFactor = (Math.sin(player.bob) * player.animal.bobStrength - player.pos.z - player.animal.height + 0.5);
-    
+    let world = Game.world;
+
+
+    for (let i = 0; i < world.walls.length; i++) {
+      let wall = world.walls[i];
+      let tex = textures[world.textures[wall.texture]];
+      let segment = world.segments[world.getWallSegment(wall, player.pos)];
+
+      let top = segment.top;
+      let bottom = segment.bottom;
+
+      let l = {};
+      let r = {};
+
+      for (let j = 0; j < 2; j++) {
+        let pos = world.vertices[j == 0 ? wall.a : wall.b];
+        let u = j;
+
+        let diff = {x: pos.x - player.pos.x, y: pos.y - player.pos.y};
+        let relativeAngle = Math.atan2(diff.y, diff.x) - player.dir.x;
+        if (relativeAngle < -fov / 2 || relativeAngle > fov / 2) {
+          relativeAngle = fov / 2 * (j == 0 ? -1 : 1);
+          let cast = world.lineIntersect(
+            [{a: world.vertices[wall.a], b: world.vertices[wall.b]}],
+            {a: player.pos, b: {x: player.pos.x + Math.cos(player.dir.x + relativeAngle) * 1000, y: player.pos.y + Math.sin(player.dir.x + relativeAngle) * 1000}}
+          );
+          u = cast[0]?.uv;
+          if (cast.length != 0) {
+            pos = cast[0].point;
+            diff = {x: pos.x - player.pos.x, y: pos.y - player.pos.y};
+          }
+        }
+
+        let d = Math.sqrt(diff.x ** 2 + diff.y ** 2) * Math.cos(relativeAngle);
+        let yShearReal = yShear + dFactor * focusPlane / d;
+
+        let size = focusPlane / d * 0.01;
+        let fog = Math.max(Math.pow(d, fogA), fogB);// + info.isHorizontal * 0.3;
+        if (isNaN(fog)) fog = 1;
+
+        let data = j == 0 ? l : r;
+        data.d = d;
+        data.yShearReal = yShearReal;
+        data.size = size;
+        data.fog = fog;
+        data.diff = diff;
+        data.u = u;
+        data.x = Math.floor(Math.tan(relativeAngle) * focusPlane + screenw / 2);
+        if (relativeAngle < -fov || relativeAngle > fov) data.x = undefined;
+      }
+
+
+      for (let x = 0; x < screenw; x++) {
+        if (x < l.x || x > r.x) continue;
+
+        let done = (x - l.x) / (r.x - l.x);
+        let d = l.d + (r.d - l.d) * done;
+        let yShearReal = l.yShearReal + (r.yShearReal - l.yShearReal) * done;
+        let size = l.size + (r.size - l.size) * done;
+        let fog = l.fog + (r.fog - l.fog) * done;
+        let uv = {u: l.u + (r.u - l.u) * done, v: 0};
+
+        /*let diff = {
+          x: l.diff.x + (r.diff.x - l.diff.x) * done,
+          y: l.diff.y + (r.diff.y - l.diff.y) * done,
+        };
+
+        let relativeAngle = Math.atan((x - screenw / 2) / focusPlane);
+        d = Math.sqrt(diff.x ** 2 + diff.y ** 2) * Math.cos(relativeAngle);
+        size = focusPlane / d * 0.01;
+        fog = Math.max(Math.pow(d, fogA), fogB);
+        yShearReal = yShear + dFactor * focusPlane / d;*/
+
+        let col = [];
+        for (let Y = 0; Y < screenh; Y++) {
+          let y = Y + Math.floor(yShearReal);
+          let deltaCenter = y / screenh - 0.5;
+          uv.v = (deltaCenter / size + 0.5 + top - 1) / (top - bottom);
+          let c = [0, 0, 0, 0];
+          
+          if (deltaCenter < (0.5 - bottom) * size && deltaCenter > (0.5 - top) * size && d > 0 && !isNaN(uv.u)) {
+            let index = (Math.floor(uv.u * tex.width) + Math.floor(uv.v * tex.height) * tex.width) * 4;
+            c[0] = tex.pixels[index  ] / fog;
+            c[1] = tex.pixels[index+1] / fog;
+            c[2] = tex.pixels[index+2] / fog;
+            c[3] = tex.pixels[index+3];
+
+            //c = [uv.u * 255, uv.v * 255, 0, 255];
+            //c[0] = 255 - d * 255
+          }
+          //c = [255, 0, 0, 255];
+
+          col.push([c[0], c[1], c[2], c[3]]);
+        }
+
+        Renderer.buffer.push({x: x, d: d, col: col});
+      }
+    }
+
+
+    /*
     for (let x = 0; x < screenw; x++) {
       let relativeAngle = Math.atan((x - screenw / 2) / focusPlane);
       
@@ -142,8 +242,10 @@ let Renderer = {
         Renderer.buffer.push({x: x, d: d, col: col});
       }
     }
-    
-    for (let segment of Game.world.segments) {
+    */
+   
+    for (let segmentIndex in world.segments) {
+      let segment = world.segments[segmentIndex];
       for (let y = 0; y < screenh; y++) {
         let row = [];
   
@@ -172,40 +274,51 @@ let Renderer = {
         y = (-c + 2a + 2b) / (c - 200d - 2cw)
         */
 
-        let sizet = (screenh * 0.005 - y * 0.01 - yShear * 0.01) / (screenh * -0.005 + dFactor + screenh * top * 0.01);
-        let dt = 1 / (sizet / 0.01 / focusPlane);
-        let sizeb = ((y + yShear) * 2 - screenh) / (screenh - dFactor * 200 - screenh * bottom * 2);
-        let db = 1 / (sizeb / 0.01 / focusPlane);
+        let drawingCeiling = (y + yShear) < screenh / 2;
+        let d;
+        if (drawingCeiling) {
+          let size = (screenh * 0.005 - y * 0.01 - yShear * 0.01) / (screenh * -0.005 + dFactor + screenh * top * 0.01);
+          d = 1 / (size / 0.01 / focusPlane);
+        } else {
+          let size = ((y + yShear) * 2 - screenh) / (screenh - dFactor * 200 - screenh * bottom * 2);
+          d = 1 / (size / 0.01 / focusPlane);
+        }
 
-        let d = Math.max(dt, db);
         let fog = Math.max(Math.pow(d, fogA), fogB);
   
-        let luv = {u: Math.cos(langle) * d, v: Math.sin(langle) * d};
-        let ruv = {u: Math.cos(rangle) * d, v: Math.sin(rangle) * d};
-  
+        let scaling = 1 / 0.71;
+        let luv = {u: Math.cos(langle) * d * scaling + player.pos.x, v: Math.sin(langle) * d * scaling + player.pos.y};
+        let ruv = {u: Math.cos(rangle) * d * scaling + player.pos.x, v: Math.sin(rangle) * d * scaling + player.pos.y};
+
+        let intersections = world.lineIntersect(world.getSegmentLines(segmentIndex), {a: {x: luv.u, y: luv.v}, b: {x: luv.u + (ruv.u - luv.u) * 200, y: luv.v + (ruv.v - luv.v) * 200}});
+        let inside = intersections.length % 2 == 1;
+        //inside = true;
+
+        let lastDone = 0;
+
         for (let x = 0; x < screenw; x++) {
-          let scaling = 1 / 0.71;
+          let done = x / screenw;
+          for (let i of intersections) {
+            if (lastDone < i.d * 200 && done > i.d * 200) inside = !inside;
+          }
+          lastDone = done;
+
           let uv = {
-            u: (luv.u + (ruv.u - luv.u) * x / screenw)  * scaling + player.pos.x,
-            v: (luv.v + (ruv.v - luv.v) * x / screenw)  * scaling + player.pos.y
+            u: (luv.u + (ruv.u - luv.u) * done),
+            v: (luv.v + (ruv.v - luv.v) * done)
           };
           
-          if (uv.u < 0 || uv.u >= Game.world.w || uv.v < 0 || uv.v >= Game.world.h || isNaN(uv.u) || isNaN(uv.v) || d < 0) {
+          if (!inside || isNaN(uv.u) || isNaN(uv.v) || d < 0) {
             row.push([0, 0, 0, 0]);
             continue;
           }
           //row.push([uv.u * 255, uv.v * 255, 0, 255]);
           //continue;
-          
-          let segmentHere = Game.world.segments[Game.world.get(Math.floor(uv.u), Math.floor(uv.v))[0]];
+
           //row.push([Game.world.get(Math.floor(uv.u), Math.floor(uv.v))[0] * 255, 0, 0, 255]);
           //continue
-          if (segmentHere != segment) {
-            row.push([0, 0, 0, 0]);
-            continue;
-          }
 
-          let tex = textures[(d == dt) ? segment.ceilingTexture : segment.floorTexture];
+          let tex = textures[world.textures[drawingCeiling ? segment.ceilingTexture : segment.floorTexture]];
   
           let c = [];
           let index = (Math.floor((uv.u + 1000) % 1 * tex.width) + Math.floor((uv.v + 1000) % 1 * tex.height) * tex.width) * 4;
@@ -226,11 +339,12 @@ let Renderer = {
     let focusPlane = screenw / 2 / Math.tan(fov / 2);
     let yShear = Math.tan(player.dir.y) * focusPlane;
     let dFactor = (Math.sin(player.bob) * player.animal.bobStrength - player.pos.z - player.animal.height + 0.5);
+    let world = Game.world;
 
     for (let i = 1; i < Game.world.entities.length; i++) {
       let entity = Game.world.entities[i];
       if (entity.owner) continue;
-      let tex = textures[entity.animal.texture];
+      let tex = textures[world.textures[entity.animal.texture]];
       let relativePos = rotateVector({x: entity.pos.x - player.pos.x, y: entity.pos.y - player.pos.y}, -player.dir.x + Math.PI / 2);
       
       let d = relativePos.y;
@@ -246,17 +360,6 @@ let Renderer = {
       let h = Math.floor(tex.height * size);
       
       Renderer.renderTexture(entity.animal.texture, X, Y, "tl", w, h, d, (entity == highlighted) * 2)
-    }
-  },
-
-  renderRectangle(x1, y1, x2, y2, d = 0, c = [255, 255, 255, 255]) {
-    for (let x = x1; x <= x2; x++) {
-      let col = [];
-      for (let y = 0; y < screenh; y++) {
-        if (y >= y1 && y <= y2) col.push(c);
-        else col.push([0, 0, 0, 0]);
-      }
-      Renderer.buffer.push({x: x, d: d, col: col});
     }
   },
 
@@ -353,10 +456,32 @@ let Renderer = {
     Renderer.renderPoint(br.x, br.y, -1, [0, 0, 255, 255]);*/
   },
 
+  renderRectangle(x1, y1, x2, y2, d = 0, c = [255, 255, 255, 255]) {
+    for (let x = x1; x <= x2; x++) {
+      let col = [];
+      for (let y = 0; y < screenh; y++) {
+        if (y >= y1 && y <= y2) col.push(c);
+        else col.push([0, 0, 0, 0]);
+      }
+      Renderer.buffer.push({x: x, d: d, col: col});
+    }
+  },
+
   renderPoint(x, y, d = 0, c = [255, 255, 255, 255]) {
     let col = [];
     for (let Y = 0; Y < screenh; Y++) col.push(Y == y ? c : [0, 0, 0, 0]);
     Renderer.buffer.push({x: x, d: d, col: col});
+  },
+
+  renderCross(X, Y, d = 0, c = [255, 255, 255, 255]) {
+    for (let x = X - 1; x <= X + 1; x++) {
+      let col = [];
+      for (let y = 0; y < screenh; y++) {
+        if (y >= Y - 1 && y <= Y + 1 && Math.abs(x - X) == Math.abs(y - Y)) col.push(c);
+        else col.push([0, 0, 0, 0]);
+      }
+      Renderer.buffer.push({x: x, d: d, col: col});
+    }
   },
 
   displayRender() {

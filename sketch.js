@@ -12,6 +12,7 @@ let pressed = new Array(128).fill(false);
 
 let debug = true;
 
+let pmousePos = {x: 0, y: 0};
 let mousePos = {x: 0, y: 0};
 
 let buttons = [];
@@ -49,8 +50,8 @@ function setup() {
 
   setScene(MainMenu);
 
-  Game.world = new World(1, 1);
-  setScene(Game);
+  //Game.world = new World();
+  //setScene(Game);
   
   frameRate(fps);
 }
@@ -86,9 +87,12 @@ function keyReleased(e) {
   if (scene?.keyReleased) scene.keyReleased(e);
 }
 function mousePressed(e) {
-  if (hoveredButton) hoveredButton.callback(e);
-
   if (scene?.mousePressed) scene.mousePressed(e);
+}
+function mouseReleased(e) {
+  if (scene?.mouseReleased) scene.mouseReleased(e);
+
+  if (hoveredButton) hoveredButton.callback(e);
 }
 function mouseWheel(e) {
   if (scene?.mouseWheel) scene.mouseWheel(e);
@@ -103,9 +107,13 @@ function getControlName(controlName) {
   return String.fromCharCode(controls[controlName]);
 }
 function mouseMoved(e) {
+  pmousePos = {x: mousePos.x, y: mousePos.y};
   mousePos = {x: e.clientX / pixelSize, y: e.clientY / pixelSize};
 
   if (scene?.mouseMoved) scene.mouseMoved(e);
+}
+function mouseDragged(e) {
+  if (scene?.mouseDragged) scene.mouseDragged(e);
 }
 
 function draw() {

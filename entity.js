@@ -1,27 +1,3 @@
-let animals = {
-  player: {
-    name: "player", 
-    type: "player", 
-    speed: 2, 
-    height: 0.65,
-    slotAmount: 4, 
-    bobSpeed: 0.2, 
-    bobStrength: 0.02, 
-    jumpStrength: 1.8
-  },
-  rat: {
-    name: "rat", 
-    type: "critter", 
-    texture: "rat", 
-    height: 0.2,
-    speed: 1, 
-    slotAmount: 1, 
-    bobSpeed: 0.2, 
-    bobStrength: 0.02, 
-    jumpStrength: 1
-  },
-};
-
 class Entity {
   constructor(animalType, pos) {
     this.animalType = animalType;
@@ -127,26 +103,16 @@ class Entity {
       v.z /= fps;
     }
     
-    
     if (v.x != 0 || v.y != 0) {
       this.bob = (this.bob + this.animal.bobSpeed) % (Math.PI * 2)
     }
-    
-    
-    let gridPos = {x: Math.floor(this.pos.x), y: Math.floor(this.pos.y)};
-  
-    this.pos.x += v.x;
-    this.pos.y += v.y;
-    this.pos.z += v.z;
 
     let world = Game.world;
-    let gridPosNew = {x: Math.floor(this.pos.x), y: Math.floor(this.pos.y)};
+    let newPos = {x: this.pos.x + v.x, y: this.pos.y + v.y, z: this.pos.z + v.z};
 
-    if (this.pos.y < 0.01) {
-      gridPosNew.y = 0.01;
-      this.pos.y = 0.01;
-    }
+    this.pos = newPos;
 
+    /*
     if (gridPosNew.x < gridPos.x && (this.pos.x < 0 || world.get(gridPos)[2] != 0)) {
       this.pos.x -= v.x;
       gridPosNew.x = Math.floor(this.pos.x);
@@ -163,8 +129,9 @@ class Entity {
       this.pos.y -= v.y;
       gridPosNew.y = Math.floor(this.pos.y);
     }
+    */
 
-    let seg = Game.world.segments[Game.world.get(Math.floor(this.pos.x), Math.floor(this.pos.y))[0]];
-    this.seg = seg;
+    let seg = world.segments[world.getSegment(this.pos)];
+    if (seg) this.seg = seg;
   }
 }

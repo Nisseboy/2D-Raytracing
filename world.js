@@ -1,10 +1,9 @@
 class World {
-  constructor(w, h) {
-    if (h == undefined) {
-      let world = JSON.parse(w);
-      this.w = world.w;
-      this.h = world.h;
-      this.grid = world.grid;
+  constructor(data) {
+    if (data) {
+      let world = JSON.parse(data);
+      this.textures = world.textures;
+      this.vertices = world.vertices;
       this.walls = world.walls;
       this.segments = world.segments;
       this.entities = world.entities;
@@ -17,25 +16,6 @@ class World {
         if (e.slots) this.entities[i].slots = e.slots;
       }
     } else {
-      this.w = w;
-      this.h = h;
-      
-      /*
-      X - X -
-      | * | *
-      X - X -
-      | * | *
-  
-      X: segment index
-      |, -: wall index
-      *: thing
-      */
-      this.grid = new Array(w * 2).fill(undefined).map((e, x) => { return new Array(h * 2).fill(0) });
-  
-      this.walls = [];
-      this.segments = [{bottom: 0, top: 1, floorTexture: "metal/floor1", ceilingTexture: "metal/ceiling1", topWallTexture: "metal/ceiling1", bottomWallTexture: "metal/floor1"}];
-      this.entities = [{animalType: "player", pos: {x: 0.5, y: 0.5}}];
-
       this.textures = ["metal/floor1", "metal/ceiling1", "metal/wall1", "rat"];
       this.vertices = [{x: 0, y: 0}, {x: 1, y: 0}, {x: 1, y: 1}, {x: 0, y: 1}];
       this.walls = [{
@@ -55,120 +35,114 @@ class World {
         b: 0,
         texture: 2,
       },];
-      this.segments = [{bottom: 0, top: 1, floorTexture: 0, ceilingTexture: 1, topWallTexture: 1, bottomWallTexture: 0}];
+      this.segments = [{walls: [0, 1, 2, 3], bottom: 0, top: 1, floorTexture: 0, ceilingTexture: 1, topWallTexture: 1, bottomWallTexture: 0}];
       this.entities = [new Entity("player", {x: 0.5, y: 0.5})];
     }
 
     this.simulated = true;
+    this.hasInit = false;
   }
 
   init() {
-    
+    for (let i of this.walls) {
+      let line = {a: this.vertices[i.a], b: this.vertices[i.b]};
+
+      let diff = {x: line.b.x - line.a.x, y: line.b.y - line.a.y};
+      let perpendicular = {x: diff.y / 128, y: diff.x / 128};
+
+      let middle = {x: line.a.x + diff.x * 0.5, y: line.a.y + diff.y * 0.5};
+      i.segments = [
+        this.getSegment({x: middle.x - perpendicular.x, y: middle.y + perpendicular.y}), 
+        this.getSegment({x: middle.x + perpendicular.x, y: middle.y - perpendicular.y})
+      ];
+    }
+
     this.hasInit = true;
   }
   
-  get(x, y) {
-    if (y == undefined) {
-      y = x.y;
-      x = x.x;
-    }
-    if (x < 0 || y < 0 || x >= this.w || y >= this.h) return undefined;
-    return [this.grid[x * 2][y * 2], this.grid[x * 2 + 1][y * 2], this.grid[x * 2][y * 2 + 1], this.grid[x * 2 + 1][y * 2 + 1]];
-  }
-  set(x, y, index, value) {
-    if (y == undefined) {
-      value = index;
-      index = y;
-      y = x.y;
-      x = x.x;
-    }
-    this.grid[x * 2 + (index == 1 || index == 3)][y * 2 + (index == 2 || index == 3)] = value;
-  }
-  
-  marchRay(startPos, angle) {
-    let dir = {x: Math.cos(angle), y: Math.sin(angle)};
-    if (dir.x == 0) dir.x = 0.001;
-    if (dir.y == 0) dir.y = 0.001;
-
-    let small = 0.0000000001;
-
-    let pos  = {x: startPos.x, y: startPos.y};
-
-    let sign = {x: Math.sign(dir.x), y: Math.sign(dir.y)};
-    let fx = (sign.x == 1) ? Math.ceil : Math.floor;
-    let fy = (sign.y == 1) ? Math.ceil : Math.floor;
-
-    let blocked = false;
+  lineIntersect(lines, l2) {
     let hits = [];
-    
-    while (!blocked && pos.x >= 0 && pos.y >= 0 && pos.x < this.grid.length / 2 && pos.y < this.grid.length / 2) {
-      let uv;
-      let isHorizontal;
-
-      let ny = lineFuncY(startPos, dir, fx(pos.x + small * sign.x));
-      let nx = lineFuncX(startPos, dir, fy(pos.y + small * sign.y));
-
-      if (nx * sign.x > fx(pos.x + small * sign.x) * sign.x) { 
-        pos.x = fx(pos.x + small * sign.x);
-        pos.y = ny;
-        uv = ny % 1;
-        isHorizontal = true;
-      } 
-      else {
-        pos.y = fy(pos.y + small * sign.y);
-        pos.x = nx;
-        uv = nx % 1;
-        isHorizontal = false;
-      }
-      
-      if (pos.x < 0 || pos.x >= this.w || pos.y < 0 || pos.y >= this.h) return hits;
-
-      let d = Math.sqrt((pos.x-startPos.x)*(pos.x-startPos.x)+(pos.y-startPos.y)*(pos.y-startPos.y));
-      let fPos = {x: Math.floor(pos.x), y: Math.floor(pos.y)};
-      let oldPos = {x: Math.floor(pos.x - small * sign.x), y: Math.floor(pos.y - small * sign.y)};
-      let newPos = {x: Math.floor(pos.x + small * sign.x), y: Math.floor(pos.y + small * sign.y)};
-
-      let wall = this.get(fPos)[isHorizontal?2:1];
-
-      let segmentIndex =  this.get(oldPos)[0];
-      let oldSegment = this.segments[segmentIndex];
-      let newSegmentIndex = this.get(newPos);
-      if (newSegmentIndex) newSegmentIndex = newSegmentIndex[0];
-
-      if (wall != 0) {
-        hits.push({
-          wall: wall,
-          segment: segmentIndex,
-          d: d,
-          uv: uv,
-          isHorizontal: isHorizontal,
-        });
-
-        if (!textures[this.walls[wall].texture].transparent) blocked = true;
-      } else if (newSegmentIndex != undefined) {
-        let newSegment = this.segments[newSegmentIndex];
-        let top = newSegment.top < oldSegment.top;
-        let bottom = newSegment.bottom > oldSegment.bottom;
-        if (top || bottom) {
+    for (let i = 0; i < lines.length; i++) {
+      let l1 = lines[i];
+      var det, gamma, lambda;
+      det = (l1.b.x - l1.a.x) * (l2.b.y - l2.a.y) - (l2.b.x - l2.a.x) * (l1.b.y - l1.a.y);
+      if (det === 0) {
+        
+      } else {
+        lambda = ((l2.b.y - l2.a.y) * (l2.b.x - l1.a.x) + (l2.a.x - l2.b.x) * (l2.b.y - l1.a.y)) / det;
+        gamma = ((l1.a.y - l1.b.y) * (l2.b.x - l1.a.x) + (l1.b.x - l1.a.x) * (l2.b.y - l1.a.y)) / det;
+  
+        let hit = (0 < lambda && lambda < 1) && (0 < gamma && gamma < 1);
+        if (hit) {
+          let diff = {x: l2.b.x - l2.a.x, y: l2.b.y - l2.a.y};
+          let point = {x: l2.a.x + diff.x * (1 - gamma), y: l2.a.y + diff.y * (1 - gamma)}
           hits.push({
-            top: top,
-            bottom: bottom,
-            oldSegment: segmentIndex,
-            newSegment: newSegmentIndex,
-            d: d,
-            uv: uv,
-            isHorizontal: isHorizontal,
+            point: point,
+            uv: lambda,
+            d: (1 - gamma),
+            i: i,
           });
         }
       }
     }
     return hits;
   }
-}
 
-function lineFuncY(startPos, dir, x) {
-  return (dir.y / dir.x) * (x - startPos.x) + startPos.y;
-}
-function lineFuncX(startPos, dir, y) {
-  return (dir.x / dir.y) * (y - startPos.y) + startPos.x;
+  getSegmentLines(segment) {
+    let walls = this.segments[segment].walls;
+    let lines = [];
+
+    for (let i = 0; i < walls.length; i++) {
+      lines.push({a: this.vertices[this.walls[walls[i]].a], b: this.vertices[this.walls[walls[i]].b]});
+    }
+    return lines;
+  }
+
+  getSegment(pos) {
+    for (let i = 0; i < this.segments.length; i++) {
+      let intersections = this.lineIntersect(this.getSegmentLines(i), {a: pos, b: {x: 100000.1, y: 0.1}});
+      if (intersections.length % 2 == 1) return i;
+    }
+  }
+
+  getWallSegment(wall, pos) {
+    let line = {a: this.vertices[wall.a], b: this.vertices[wall.b]};
+
+    let diff1 = {x: line.b.x - line.a.x, y: line.b.y - line.a.y};
+    let diff2 = {x: pos.x - line.a.x, y: pos.y - line.a.y};
+    
+    let a1 = (Math.atan2(diff1.y, diff1.x) + Math.PI * 2) % (Math.PI);
+    let a2 = (Math.atan2(diff2.y, diff2.x) + Math.PI * 2) % (Math.PI);
+
+    let diffAngle = a1 - a2;
+
+    let segment;
+    if (Math.abs(diffAngle) > Math.PI) segment = wall.segments[1];
+    else segment = wall.segments[0];
+
+    return segment;
+  }
+
+  export() {
+    let data = {};
+    data.textures = this.textures;
+    data.vertices = this.vertices;
+    data.walls = this.walls;
+    data.segments = this.segments;
+    data.entities = [];
+
+    for (let i = 0; i < this.entities.length; i++) {
+      data.entities[i] = {};
+      let e = data.entities[i];
+      let en = this.entities[i];
+
+      e.animalType = en.animalType;
+      e.pos = en.pos;
+      e.dir = en.dir;
+      e.vel = en.vel;
+      e.slots = en.slots;
+    }
+
+    return JSON.stringify(data);
+  }
 }
