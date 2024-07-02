@@ -10,7 +10,7 @@ let fps = 60;
 
 let pressed = new Array(128).fill(false);
 
-let debug = true;
+let debug = false;
 
 let pmousePos = {x: 0, y: 0};
 let mousePos = {x: 0, y: 0};

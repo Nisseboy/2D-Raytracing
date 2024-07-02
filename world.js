@@ -40,10 +40,10 @@ class World {
     }
 
     this.simulated = true;
-    this.hasInit = false;
+    this.precalc();
   }
 
-  init() {
+  precalc() {
     for (let i of this.walls) {
       let line = {a: this.vertices[i.a], b: this.vertices[i.b]};
 
@@ -56,8 +56,6 @@ class World {
         this.getSegment({x: middle.x + perpendicular.x, y: middle.y - perpendicular.y})
       ];
     }
-
-    this.hasInit = true;
   }
   
   lineIntersect(lines, l2) {

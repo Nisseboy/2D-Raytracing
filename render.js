@@ -95,6 +95,7 @@ let Renderer = {
       let wall = world.walls[i];
       let tex = textures[world.textures[wall.texture]];
       let segment = world.segments[world.getWallSegment(wall, player.pos)];
+      if (!segment) continue;
 
       let top = segment.top;
       let bottom = segment.bottom;
@@ -188,61 +189,6 @@ let Renderer = {
     }
 
 
-    /*
-    for (let x = 0; x < screenw; x++) {
-      let relativeAngle = Math.atan((x - screenw / 2) / focusPlane);
-      
-      let infos = Game.world.marchRay(player.pos, player.dir.x + relativeAngle);
-      for (let i = 0; i < infos.length; i++) {
-        let info = infos[i];
-        let d = info.d * Math.cos(relativeAngle);
-        let yShearReal = yShear + dFactor * focusPlane / d;
-      
-        let size = focusPlane / d * 0.01;
-        let wallFog = Math.max(Math.pow(d, fogA), fogB) + info.isHorizontal * 0.3;
-        
-        let segment = Game.world.segments[info.segment];
-        let oldSegment = Game.world.segments[info.oldSegment];
-        let newSegment = Game.world.segments[info.newSegment];
-  
-        let tex;
-        let top;
-        let bottom;
-        if (segment) {
-          tex = textures[info.wall == undefined ? segment.ceilingTexture : Game.world.walls[info.wall].texture];
-          top = segment.top;
-          bottom = segment.bottom;
-        } else {
-          tex = textures[info.top ? newSegment.topWallTexture : newSegment.bottomWallTexture];
-          top = info.top?oldSegment.top:newSegment.bottom;
-          bottom = info.top?newSegment.top:oldSegment.bottom;
-        }
-
-        let col = [];
-  
-        let uv = {u: info.uv, v: 0};
-          
-        for (let Y = 0; Y < screenh; Y++) {
-          let y = Y + Math.floor(yShearReal);
-          let deltaCenter = y / screenh - 0.5;
-          uv.v = (deltaCenter / size + 0.5 + top - 1) / (top - bottom);
-          let c = [0, 0, 0, 0];
-          
-          if (deltaCenter < (0.5 - bottom) * size && deltaCenter > (0.5 - top) * size) {
-            let index = (Math.floor(uv.u * tex.width) + Math.floor(uv.v * tex.height) * tex.width) * 4;
-            c[0] = tex.pixels[index  ] / wallFog;
-            c[1] = tex.pixels[index+1] / wallFog;
-            c[2] = tex.pixels[index+2] / wallFog;
-            c[3] = tex.pixels[index+3];
-          }
-          
-          col.push([c[0], c[1], c[2], c[3]]);
-        }
-
-        Renderer.buffer.push({x: x, d: d, col: col});
-      }
-    }
-    */
    
     for (let segmentIndex in world.segments) {
       let segment = world.segments[segmentIndex];

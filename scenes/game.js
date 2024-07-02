@@ -16,10 +16,6 @@ let Game = {
   },
   start() {
     requestPointerLock();
-
-    if (!Game.world.hasInit) {
-      Game.world.init();
-    }
   
     player = Game.world.entities[0];
   },

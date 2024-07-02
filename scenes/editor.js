@@ -12,12 +12,11 @@ let Editor = {
   hovered: undefined,
   selected: [],
   dragging: false,
+  walling: false,
+  tempVertex: undefined,
 
   hoveredColor: [0, 255, 255, 255],
   selectedColor: [200, 200, 0, 255],
-
-  history: [],
-  historyPtr: 0,
 
   init() {
     
@@ -31,21 +30,8 @@ let Editor = {
   },
   
   update() {
-    buttons.push({
-      text: "back",
-      x: screenw - 1,
-      y: 1,
-      align: "tr",
-      d: 0,
-
-      callback: Editor.backButton,
-    });
-    buttons.push({
+    menuButtons.push({
       text: "3d",
-      x: screenw - 1,
-      y: 11,
-      align: "tr",
-      d: 0,
 
       callback: e => {Editor.playButton(false)},
     });
@@ -169,41 +155,78 @@ let Editor = {
   mousePressed() {
     let hovered = Editor.hovered;
     let selected = Editor.selected;
+    let world = Editor.world;
+
+    let shift = pressed[16];
     let ctrl = pressed[17];
+    
+    if (mouseButton == LEFT) {
+      if (hovered) {
+        Editor.dragging = true;
 
-    if (hovered) {
-      Editor.dragging = true;
+        if (shift && hovered.x != undefined) {
+          Editor.walling = true;
+          Editor.dragging = false;
+          Editor.tempVertex = {x: mouseWorld.x, y: mouseWorld.y};
+          world.vertices.push(Editor.tempVertex);
 
-      if (!selected.includes(hovered)) {
-        if (!ctrl) selected.length = 0;
-        selected.push(hovered);
+          world.walls.push({a: world.vertices.indexOf(hovered), b: world.vertices.indexOf(Editor.tempVertex), texture: 2});
+        } else {
+          if (!selected.includes(hovered)) {
+            if (!ctrl) selected.length = 0;
+            selected.push(hovered);
+          }
+        }
+      } else if (!ctrl) {
+        selected.length = 0;
+
+        if (shift) {
+          world.vertices.push({x: mouseWorld.x, y: mouseWorld.y});
+        }
       }
-    } else if (!ctrl) {
-      selected.length = 0;
     }
   },
   mouseDragged(e) {
-    if (!Editor.dragging) return;
-
+    if (Editor.dragging) Editor.draggingFunc(e);
+    if (Editor.walling) Editor.wallingFunc(e);
+  },
+  draggingFunc(e) {
     let selected = Editor.selected;
     let diff = {x: e.movementX / Editor.gridSize / pixelSize, y: e.movementY / Editor.gridSize / pixelSize};
 
-    let actions = [];
-    
     for (let i = 0; i < selected.length; i++) {
       let s = selected[i];
       if (!s.pos && s.x == undefined && s.y == undefined) continue;
-      actions.push({name: "move", o: s, v: diff});
+      if (s.pos) {
+        s.pos.x += diff.x;
+        s.pos.y += diff.y;
+      }
+      if (s.x != undefined) {
+        s.x += diff.x;
+        s.y += diff.y;
+      }
     }
+  },
+  wallingFunc(e) {
+    let diff = {x: e.movementX / Editor.gridSize / pixelSize, y: e.movementY / Editor.gridSize / pixelSize};
 
-    Editor.performActions(actions);
+    Editor.tempVertex.x += diff.x;
+    Editor.tempVertex.y += diff.y;
   },
   mouseReleased() {
     Editor.dragging = false;
+    Editor.walling = false;
+
+    if (Editor.tempVertex) {
+      Editor.world.vertices.push(Editor.tempVertex);
+      Editor.tempVertex = undefined;
+    }
+
+    Editor.world.precalc();
   },
 
   keyPressed() {
-    if (pressed[17] && pressed[90]) Editor.undoAction();
+    if (keyCode == getKey("Pause")) Editor.backButton();
   },
 
   backButton() {
@@ -212,50 +235,9 @@ let Editor = {
   },
   playButton(simulate) {
     Editor.tempWorld = Game.world;
-    Game.world = new World(JSON.stringify(Editor.world));
+    Game.world = new World(Editor.world.export());
     Game.world.simulated = simulate;
     setScene(Game);
-  },
-
-  performActions(actions) {
-    Editor.history[Editor.historyPtr] = actions;
-    Editor.historyPtr++;
-
-    for (let a of actions) {
-      switch (a.name) {
-        case "move":
-          if (a.o.pos) {
-            a.o.pos.x += a.v.x;
-            a.o.pos.y += a.v.y;
-          }
-          if (a.o.x != undefined) {
-            a.o.x += a.v.x;
-            a.o.y += a.v.y;
-          }
-          break;
-      }
-    }
-  },
-  undoAction() {
-    if (Editor.historyPtr == 0) return;
-
-    Editor.historyPtr--;
-    let actions = Editor.history[Editor.historyPtr];
-
-    for (let a of actions) {
-      switch (a.name) {
-        case "move":
-          if (a.o.pos) {
-            a.o.pos.x -= a.v.x;
-            a.o.pos.y -= a.v.y;
-          }
-          if (a.o.x != undefined) {
-            a.o.x -= a.v.x;
-            a.o.y -= a.v.y;
-          }
-          break;
-      }
-    }
   },
 
   stop() {
