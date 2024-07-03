@@ -108,13 +108,16 @@ let Renderer = {
         let u = j;
 
         let diff = {x: pos.x - player.pos.x, y: pos.y - player.pos.y};
-        let relativeAngle = Math.atan2(diff.y, diff.x) - player.dir.x;
+        let relativeAngle = -getDeltaAngle(Math.atan2(diff.y, diff.x), player.dir.x);
+
         if (relativeAngle < -fov / 2 || relativeAngle > fov / 2) {
           relativeAngle = fov / 2 * (j == 0 ? -1 : 1);
           let cast = world.lineIntersect(
             [{a: world.vertices[wall.a], b: world.vertices[wall.b]}],
             {a: player.pos, b: {x: player.pos.x + Math.cos(player.dir.x + relativeAngle) * 1000, y: player.pos.y + Math.sin(player.dir.x + relativeAngle) * 1000}}
           );
+
+
           u = cast[0]?.uv;
           if (cast.length != 0) {
             pos = cast[0].point;
@@ -141,9 +144,7 @@ let Renderer = {
       }
 
 
-      for (let x = 0; x < screenw; x++) {
-        if (x < l.x || x > r.x) continue;
-
+      for (let x = l.x; x < r.x; x++) {
         let done = (x - l.x) / (r.x - l.x);
         let d = l.d + (r.d - l.d) * done;
         let yShearReal = l.yShearReal + (r.yShearReal - l.yShearReal) * done;
@@ -177,9 +178,7 @@ let Renderer = {
             c[3] = tex.pixels[index+3];
 
             //c = [uv.u * 255, uv.v * 255, 0, 255];
-            //c[0] = 255 - d * 255
           }
-          //c = [255, 0, 0, 255];
 
           col.push([c[0], c[1], c[2], c[3]]);
         }
@@ -457,3 +456,13 @@ let Renderer = {
     image(Renderer.img, 0, 0, width, height);
   }
 };
+
+//https://gist.github.com/yomotsu/165ba9ee0dc991cb6db5
+var getDeltaAngle = function () {
+  var TAU = 2 * Math.PI;
+  var mod = function (a, n) { return ( a % n + n ) % n; } // modulo
+  var equivalent = function (a) { return mod(a + Math.PI, TAU) - Math.PI } // [-π, +π]
+  return function (current, target) {
+    return equivalent(target - current);
+  }
+}();

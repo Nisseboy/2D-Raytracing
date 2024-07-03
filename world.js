@@ -109,10 +109,10 @@ class World {
     let diff1 = {x: line.b.x - line.a.x, y: line.b.y - line.a.y};
     let diff2 = {x: pos.x - line.a.x, y: pos.y - line.a.y};
     
-    let a1 = (Math.atan2(diff1.y, diff1.x) + Math.PI * 2) % (Math.PI);
-    let a2 = (Math.atan2(diff2.y, diff2.x) + Math.PI * 2) % (Math.PI);
+    let a1 = Math.atan2(diff1.y, diff1.x);
+    let a2 = Math.atan2(diff2.y, diff2.x);
 
-    let diffAngle = a1 - a2;
+    let diffAngle = -getDeltaAngle(a1, a2);
 
     let segment;
     if (Math.abs(diffAngle) > Math.PI) segment = wall.segments[1];

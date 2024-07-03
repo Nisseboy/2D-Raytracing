@@ -50,8 +50,8 @@ function setup() {
 
   setScene(MainMenu);
 
-  //Game.world = new World();
-  //setScene(Game);
+  Game.world = new World(levels["chapter 1"]["level 1"]);
+  setScene(Game);
   
   frameRate(fps);
 }
