@@ -38,7 +38,7 @@ let Editor = {
     menuButtons.push({
       text: "help",
 
-      callback: e => {Editor.playButton(false)},
+      callback: e => {window.open("https://github.com/Nisseboy/2D-Raytracing/blob/master/docs/editor.md")},
     });
     menuButtons.push({
       text: "3d",
@@ -256,7 +256,7 @@ let Editor = {
   },
   snap(object, connect = false) {
     let pos = object.pos || {x: object.x, y: object.y};
-    if (pos.x == undefined || !Editor.snapping) return {};
+    if (pos.x == undefined) return {};
 
     let world = Editor.world;
     for (let i = 0; i < world.vertices.length; i++) {
@@ -282,6 +282,8 @@ let Editor = {
         }
       }
     }
+
+    if (!Editor.snapping) return {};
 
     Editor.setObjectPos(object, {
       x: Math.round(pos.x * 2) / 2,
