@@ -33,6 +33,7 @@ let MainMenu = {
       }
 
       buttons.push({
+        renderer: "text",
         text: "back",
         x: screenw - 1,
         y: 1,
@@ -56,6 +57,7 @@ let MainMenu = {
       Renderer.renderTexture("metal/ceiling1", screenw / 2, screenh / 2, "cc", w + 4, 5 + 13 + 4, -1, 1);
       Renderer.renderText(text, screenw / 2, screenh / 2 - 1, "bc", -1);
       buttons.push({
+        renderer: "text",
         text: "yes",
         x: screenw / 2 - 1,
         y: screenh / 2,
@@ -65,6 +67,7 @@ let MainMenu = {
         callback: e => {MainMenu.warning.callback(e); MainMenu.warning = undefined},
       });
       buttons.push({
+        renderer: "text",
         text: "no",
         x: screenw / 2 + 1,
         y: screenh / 2,

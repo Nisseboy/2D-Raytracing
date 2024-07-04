@@ -82,7 +82,7 @@ let Game = {
       Renderer.renderTexture(held.animal.texture, (screenw - 20) / 2, screenh - 40, "tl", 20, 40, 0.1);
     }
 
-    Renderer.renderTexture("crosshair", screenw / 2, screenh / 2, "cc", textures.crosshair.width,  textures.crosshair.height, 0);
+    Renderer.renderTexture("uicrosshair", screenw / 2, screenh / 2, "cc", textures.uicrosshair.width,  textures.uicrosshair.height, 0);
     
     if (highlighted) {
       Renderer.renderText(`press [${getControlName("Interact")}] to pick up ${highlighted.animal.name}`, screenw / 2, screenh / 2, "bc");

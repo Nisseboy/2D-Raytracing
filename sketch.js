@@ -19,6 +19,18 @@ let buttons = [];
 let menuButtons = [];
 let hoveredButton;
 
+let buttonRenderers = {
+  text: button => {
+    let c = hoveredButton == button ? button.hoverColor : button.color;
+    return Renderer.renderButton(button.text, button.x, button.y, button.align, button.d, c || [255, 255, 255]);
+  },
+  texture: button => {
+    let c = hoveredButton == button ? button.hoverColor : button.color;
+    Renderer.renderTexture(button.texture, button.x, button.y, button.align, textures[button.texture].width, 9, button.d, 1, c || [255, 255, 255]);
+    return {x: button.x, y: button.y, w: textures[button.texture].width, h: 9};
+  },
+};
+
 let controls = {
   "Walk Forward": 87,
   "Walk Back": 83,
@@ -50,8 +62,10 @@ function setup() {
 
   setScene(MainMenu);
 
-  Game.world = new World(levels["chapter 1"]["level 1"]);
-  setScene(Game);
+  //Game.world = new World(levels["chapter 1"]["level 1"]);
+  //setScene(Game);
+
+  setScene(Editor);
   
   frameRate(fps);
 }
@@ -113,6 +127,9 @@ function mouseMoved(e) {
   if (scene?.mouseMoved) scene.mouseMoved(e);
 }
 function mouseDragged(e) {
+  pmousePos = {x: mousePos.x, y: mousePos.y};
+  mousePos = {x: e.clientX / pixelSize, y: e.clientY / pixelSize};
+  
   if (scene?.mouseDragged) scene.mouseDragged(e);
 }
 
@@ -124,30 +141,29 @@ function draw() {
 
   if (scene.update) scene.update();
 
-  for (let i in menuButtons) {
-    let menuButton = menuButtons[i];
+  for (let i = 0; i < menuButtons.length; i++) {
+    let button = menuButtons[i];
 
-    buttons.push({
-      text: menuButton.text,
-      x: 0 + (menuButton.dpos?.x || 0),
-      y: 10 + i * 10 + (menuButton.dpos?.y || 0),
-      align: menuButton.align || "tl",
-      d: 0,
-
-      color: [255, 255, 255],
-      hoverColor: [255, 0, 0],
-
-      callback: menuButton.callback || (() => {}),
-    });
+    if (!button.renderer) button.renderer = "text";
+    if (button.x == undefined) button.x = 0 + (button.dpos?.x || 0);
+    if (button.y == undefined) button.y = (i + 1) * 10 + (button.dpos?.y || 0);
+    if (button.align == undefined) button.align = "tl";
+    if (button.d == undefined) button.d = 0;
+    if (button.callback == undefined) button.callback = () => {};
+    buttons.push(button);
   }
 
   for (let i in buttons) {
     let button = buttons[i];
-    let bounds = Renderer.renderButton(button.text, button.x, button.y, button.align, button.d, button.color || [255, 255, 255]);
+    if (!button.color) button.color = [255, 255, 255, 255];
+    if (!button.hoverColor) button.hoverColor = [255, 0, 0, 255];
+
+    let renderer = buttonRenderers[button.renderer];
+    let bounds = renderer(button);
 
     if (mousePos.x > bounds.x && mousePos.y > bounds.y && mousePos.x < bounds.x + bounds.w && mousePos.y < bounds.y + bounds.h) {
-      Renderer.renderButton(button.text, button.x, button.y, button.align, button.d, button.hoverColor || [255, 0, 0]);
       hoveredButton = button;
+      renderer(button)
     }
   }
   
