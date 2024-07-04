@@ -17,6 +17,7 @@ let Game = {
   start() {
     requestPointerLock();
   
+    Game.world.precalc();
     player = Game.world.entities[0];
   },
   keyPressed(e) {

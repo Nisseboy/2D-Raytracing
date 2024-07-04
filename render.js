@@ -54,7 +54,7 @@ let Renderer = {
         let index = (Math.floor((x - X) % 4) + Math.floor((y - Y) % 5) * 3);
         let char = font[string[Math.floor((x - X) / 4)]];
         
-        if (char == undefined) char = font.rect;
+        if (char == undefined) char = font["§"];
 
         let clr = [
           c[0],
@@ -100,6 +100,13 @@ let Renderer = {
       let top = segment.top;
       let bottom = segment.bottom;
 
+      if (wall.divider) {
+        let segment2 = world.segments[world.getWallSegment(wall, player.pos, true)];
+        if (segment.bottom < segment2.bottom) {
+          print(123);
+        }
+      }
+
       let l = {};
       let r = {};
 
@@ -110,13 +117,14 @@ let Renderer = {
         let diff = {x: pos.x - player.pos.x, y: pos.y - player.pos.y};
         let relativeAngle = -getDeltaAngle(Math.atan2(diff.y, diff.x), player.dir.x);
 
-        if (relativeAngle < -fov / 2 || relativeAngle > fov / 2) {
-          relativeAngle = fov / 2 * (j == 0 ? -1 : 1);
+        let na = Math.min(Math.max(relativeAngle, -fov / 2), fov / 2);
+        if (relativeAngle != na) {
+          relativeAngle = na;
+          
           let cast = world.lineIntersect(
             [{a: world.vertices[wall.a], b: world.vertices[wall.b]}],
             {a: player.pos, b: {x: player.pos.x + Math.cos(player.dir.x + relativeAngle) * 1000, y: player.pos.y + Math.sin(player.dir.x + relativeAngle) * 1000}}
           );
-
 
           u = cast[0]?.uv;
           if (cast.length != 0) {
@@ -152,16 +160,20 @@ let Renderer = {
         let fog = l.fog + (r.fog - l.fog) * done;
         let uv = {u: l.u + (r.u - l.u) * done, v: 0};
 
-        /*let diff = {
-          x: l.diff.x + (r.diff.x - l.diff.x) * done,
-          y: l.diff.y + (r.diff.y - l.diff.y) * done,
-        };
 
         let relativeAngle = Math.atan((x - screenw / 2) / focusPlane);
-        d = Math.sqrt(diff.x ** 2 + diff.y ** 2) * Math.cos(relativeAngle);
+        
+        let cast = world.lineIntersect(
+          [{a: world.vertices[wall.a], b: world.vertices[wall.b]}],
+          {a: player.pos, b: {x: player.pos.x + Math.cos(player.dir.x + relativeAngle) * 1000, y: player.pos.y + Math.sin(player.dir.x + relativeAngle) * 1000}}
+        );
+        if (cast[0]) {
+          d = Math.sqrt((cast[0].point.x - player.pos.x) ** 2 + (cast[0].point.y - player.pos.y) ** 2) * Math.cos(relativeAngle)
+          uv.u = cast[0].uv;
+        }
         size = focusPlane / d * 0.01;
         fog = Math.max(Math.pow(d, fogA), fogB);
-        yShearReal = yShear + dFactor * focusPlane / d;*/
+        yShearReal = yShear + dFactor * focusPlane / d;
 
         let col = [];
         for (let Y = 0; Y < screenh; Y++) {
@@ -171,7 +183,7 @@ let Renderer = {
           let c = [0, 0, 0, 0];
           
           if (deltaCenter < (0.5 - bottom) * size && deltaCenter > (0.5 - top) * size && d > 0 && !isNaN(uv.u)) {
-            let index = (Math.floor(uv.u * tex.width) + Math.floor(uv.v * tex.height) * tex.width) * 4;
+            let index = (Math.floor(uv.u * (wall.tileH ? wall.length : 1) * tex.width) + Math.floor(uv.v * (wall.tileV ? wall.length : 1) * tex.height) * tex.width) * 4;
             c[0] = tex.pixels[index  ] / fog;
             c[1] = tex.pixels[index+1] / fog;
             c[2] = tex.pixels[index+2] / fog;

@@ -67,10 +67,10 @@ function setup() {
 
   setScene(MainMenu);
 
-  Game.world = new World(levels["chapter 1"]["level 1"]);
-  setScene(Game);
+  //Game.world = new World(levels["chapter 1"]["level 1"]);
+  //setScene(Game);
 
-  //setScene(Editor);
+  setScene(Editor);
   
   frameRate(fps);
 }
@@ -149,12 +149,8 @@ function draw() {
   for (let i = 0; i < menuButtons.length; i++) {
     let button = menuButtons[i];
 
-    if (!button.renderer) button.renderer = "text";
     if (button.x == undefined) button.x = 0 + (button.dpos?.x || 0);
     if (button.y == undefined) button.y = (i + 1) * 10 + (button.dpos?.y || 0);
-    if (button.align == undefined) button.align = "tl";
-    if (button.d == undefined) button.d = 0;
-    if (button.callback == undefined) button.callback = () => {};
     buttons.push(button);
   }
 
@@ -162,8 +158,11 @@ function draw() {
     let button = buttons[i];
     if (!button.color) button.color = [255, 255, 255, 255];
     if (!button.hoverColor) button.hoverColor = [255, 0, 0, 255];
+    if (button.align == undefined) button.align = "tl";
+    if (button.d == undefined) button.d = 0;
+    if (button.callback == undefined) button.callback = () => {};
 
-    let renderer = buttonRenderers[button.renderer];
+    let renderer = buttonRenderers[button.renderer || "text"];
     let bounds = renderer(button);
 
     if (inBounds(mousePos, bounds)) {

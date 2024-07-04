@@ -1,11 +1,13 @@
 let folders = [
   "ui", "crosshair,snapping,segments,plus",
+  "ui/propertytabs", "walls,segments,entities",
   "brick/wall", "1,2,3,4,5,6,window",
   "metal/wall", "1,2,3",
   "metal/floor", "1",
   "metal/ceiling", "1",
   "entities/rat", "1",
 ];
+
 
 let textures = {
   empty: {pixels: [0, 0, 0, 0], width: 1, height: 1},

@@ -4,7 +4,7 @@ let mouseWorld;
 
 let Editor = {
   tempWorld: undefined,
-  world: new World(levels["chapter 1"]["level 1"]),
+  world: new World(levels["chapter 1"]["level 2"]),
 
   pos: {x: 0, y: 0},
   gridSize: 10,
@@ -17,12 +17,14 @@ let Editor = {
 
   snapping: true,
   snapDist: 0.3,
-  
-  segmentPanelOpen: false,
-  segmentPanelScroll: 0,
-  selectedSegment: undefined,
 
-  propertyPanelOpen: false,
+  panel: undefined,
+  panels: {
+    segments: {scroll: 0, height: () => {return Math.ceil((Editor.world.segments.length + 1) / 4) * 13}},
+    properties: {scroll: 0, tab: 0},
+  },
+  
+  selectedSegment: undefined,
 
   panelWidth: 60,
 
@@ -34,6 +36,11 @@ let Editor = {
   },
 
   start() {
+    if (!localStorage.getItem("hasEnteredEditor")) {
+      setScene(EditorIntroduction);
+      return;
+    }
+
     if (inEditor) {
       Game.world = Editor.tempWorld;
     }
@@ -45,6 +52,9 @@ let Editor = {
   update() {
     let world = Editor.world;
     Editor.hovered = undefined;
+
+    if (Editor.panel == undefined && Editor.selected.length != 0) Editor.panel = "properties";
+    if (Editor.panel == "properties" && Editor.selected.length == 0) Editor.panel = undefined;
 
     if (Editor.selectedSegment == undefined) {
       menuButtons.push({
@@ -62,7 +72,7 @@ let Editor = {
 
         texture: "uisegments",
 
-        callback: () => {Editor.segmentPanelOpen = true},
+        callback: () => {Editor.panel = "segments"},
       });
       menuButtons.push({
         renderer: "texture",
@@ -73,8 +83,11 @@ let Editor = {
         callback: () => {Editor.snapping = !Editor.snapping},
       });
 
-      if (Editor.segmentPanelOpen)
+      if (Editor.panel == "segments")
         Editor.renderSegmentPanel();
+
+      if (Editor.panel == "properties") 
+        Editor.renderPropertiesPanel();
     } else {
       menuButtons.push({
         text: "done",
@@ -93,7 +106,7 @@ let Editor = {
           }
           world.precalc();
 
-          Editor.segmentPanelOpen = true;
+          Editor.panel = "segments";
           Editor.selectedSegment = undefined;
           selected.length = 0;
         }
@@ -218,7 +231,7 @@ let Editor = {
     let world = Editor.world;
 
     if (Editor.selectedSegment) {
-      if (hovered && hovered.a != undefined) {
+      if (hovered && hovered.a != undefined && !selected.includes(hovered)) {
         selected.push(hovered);
       }
       return;
@@ -362,28 +375,27 @@ let Editor = {
     world.precalc();
   },
 
-  keyPressed() {
+  keyReleased() {
     if (keyCode == getKey("Pause")) Editor.backButton();
   },
 
   mouseWheel(e) {
-    if (Editor.segmentPanelOpen) Editor.segmentPanelScroll += -Math.floor(e.delta / pixelSize);
-    Editor.segmentPanelScroll = Math.min(Editor.segmentPanelScroll, 0);
-    Editor.segmentPanelScroll = Math.max(Editor.segmentPanelScroll, -Math.max((Math.ceil((Editor.world.segments.length + 1) / 4)) * 13, screenh) + screenh);
+    if (Editor.panel) {
+      let panel = Editor.panels[Editor.panel];
+      panel.scroll += -Math.floor(e.delta / pixelSize);
+      panel.scroll = Math.min(panel.scroll, 0);
+      panel.scroll = Math.max(panel.scroll, -Math.max(panel.height(), screenh) + screenh);
+    }
   },
 
   backButton() {
-    if (Editor.segmentPanelOpen) {
-      Editor.segmentPanelOpen = false;
-      return;
-    }
-    if (Editor.propertyPanelOpen) {
-      Editor.propertyPanelOpen = false;
+    if (Editor.panel) {
+      Editor.panel = undefined;
       return;
     }
     if (Editor.selectedSegment != undefined) {
       Editor.selectedSegment = undefined;
-      Editor.segmentPanelOpen = true;
+      Editor.panel = "segments";
       return;
     }
 
@@ -410,7 +422,7 @@ let Editor = {
     Renderer.renderRectangle(x, 0, screenw, screenh, 2, [20, 20, 20, 255]);
     x++;
 
-    let y = Editor.segmentPanelScroll + 1;
+    let y = Editor.panels.segments.scroll + 1;
     for (let i = 0; i < segments.length; i++) {
       let segment = segments[i];
 
@@ -459,11 +471,110 @@ let Editor = {
       }
     };
     buttons.push(button);
+  },
 
-    x = screenw - Editor.panelWidth - 1 + 14;
-    y = 1;
+  renderPropertiesPanel() {
+    let world = Editor.world;
+    let selected = Editor.selected;
+    let tab = Editor.panels.properties.tab;
 
-    Renderer.renderPoint(x, y);
+    let x = screenw - Editor.panelWidth - 1;
+    let y = Editor.panels.segments.scroll + 1;
+
+    Renderer.renderRectangle(x, 0, screenw, screenh, 2, [20, 20, 20, 255]);
+    x++;
+
+    let types = [[], [], []];
+    for (let i = 0; i < selected.length; i++) {
+      let s = selected[i];
+      if (s.a != undefined) types[0].push(s);
+      if (s.walls) types[1].push(s);
+      if (s.pos) types[2].push(s);
+    }
+    if (types[tab].length == 0) {
+      for (let i = 2; i >= 0; i--) {
+        if (types[i].length != 0) Editor.panels.properties.tab = i;
+      }
+    }
+    tab = Editor.panels.properties.tab;
+
+    for (let i = 0; i < 3; i++) {
+      if (types[i].length != 0)
+        menuButtons.push({
+          renderer: "texture",
+          texture: "ui/propertytabs" + ["walls", "segments", "entities"][i],
+          x: x,
+          y: y,
+          w: Editor.panelWidth / 3,
+          h: 15,
+
+          color: i == tab ? [255, 0, 255, 255] : [255, 255, 255, 255],
+
+          callback: () => {Editor.panels.properties.tab = i}
+        });
+
+      x += Editor.panelWidth / 3;
+    }
+    x -= Editor.panelWidth;
+    y += 16;
+    
+    let settings = [];
+    let obs = types[tab];
+
+    if (tab == 0) {
+      //Walls
+      settings = [
+        {name: "divider", type: "bool", property: "divider"},
+        {name: "tex", type: "texture", property: "texture"},
+        {name: "tileH", type: "bool", property: "tileH"},
+        {name: "tileV", type: "bool", property: "tileV"},
+      ];
+    }
+
+    for (let i = 0; i < settings.length; i++) {
+      let setting = settings[i];
+      let value = obs[0][setting.property];
+      for (let j of obs) {
+        if (j[setting.property] != value) value = undefined;
+      }
+
+      const setValue = (v) => {
+        for (let j of obs) {
+          j[setting.property] = v;
+        }
+      }
+
+      switch (setting.type) {
+        case "bool":
+          Renderer.renderText(setting.name, x, y);
+          buttons.push({
+            text: value ? "§" : (value == undefined ? "*" : "."),
+            x: screenw - 1,
+            y: y,
+            align: "tr",
+
+            callback: () => {setValue(!value)},
+          });
+    
+          y += 10;
+          break;
+        case "texture":
+          Renderer.renderText(setting.name, x, y);
+          buttons.push({
+            renderer: "texture",
+            texture: world.textures[value] || "empty",
+            x: screenw - 1 - 16,
+            y: y,
+            w: 16,
+            h: 16,
+
+            callback: () => {MaterialPicker.toChange = {objects: obs, property: setting.property}; setScene(MaterialPicker)}
+          });
+    
+          y += 17;
+          break;
+      }
+    }
   },
 
   stop() {

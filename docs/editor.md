@@ -7,10 +7,12 @@ Each level is composed of a list of objects:
 * Entities: These can be anywhere and are things like enemies, items, rats, or barrels
 
 
-You select objects by clicking on them, you can also ctrl+click to select multiple objects, if you drag a selected object all other selected objects will move. Once you have selected at least one object a properties window will appear. Here you can edit them:
+You select objects by clicking on them, you can also ctrl+click to select multiple objects, if you drag a selected object all other selected objects will move. Once you have selected at least one object a properties window will appear, A star on any value means that the objects you have selected have different values but they will become the same once you change it:
 * Walls:
-  * Divider: if this is checked the wall doesn't exist in the world, but is instead used to separate segments
-  * 
+  * Divider: If this is checked the wall doesn't exist in the world, but is instead used to separate segments
+  * Tex: The wall texture
+  * TileH: Whether or not to tile the texture horizontally so it doesn't stretch
+  * TileV: The same but vertically
 
 
 There are a few buttons on the left side:

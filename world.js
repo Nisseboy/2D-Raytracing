@@ -55,6 +55,11 @@ class World {
         this.getSegment({x: middle.x - perpendicular.x, y: middle.y + perpendicular.y}), 
         this.getSegment({x: middle.x + perpendicular.x, y: middle.y - perpendicular.y})
       ];
+      i.length = Math.sqrt(diff.x ** 2 + diff.y ** 2);
+
+      if (i.divider == undefined) i.divider = false;
+      if (i.tileH == undefined) i.tileH = false;
+      if (i.tileV == undefined) i.tileV = false;
     }
   }
   
@@ -103,7 +108,7 @@ class World {
     }
   }
 
-  getWallSegment(wall, pos) {
+  getWallSegment(wall, pos, invert = false) {
     let line = {a: this.vertices[wall.a], b: this.vertices[wall.b]};
 
     let diff1 = {x: line.b.x - line.a.x, y: line.b.y - line.a.y};
@@ -115,8 +120,8 @@ class World {
     let diffAngle = -getDeltaAngle(a1, a2);
 
     let segment;
-    if (Math.abs(diffAngle) > Math.PI) segment = wall.segments[1];
-    else segment = wall.segments[0];
+    if (Math.abs(diffAngle) > Math.PI) segment = wall.segments[invert ? 0 : 1];
+    else segment = wall.segments[invert ? 1 : 0];
 
     return segment;
   }
