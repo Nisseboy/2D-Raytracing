@@ -143,7 +143,7 @@ let Renderer = {
         if (relativeAngle < -fov || relativeAngle > fov) data.x = undefined;
       }
 
-
+      if (l.x > r.x) [l, r] = [r, l];
       for (let x = l.x; x < r.x; x++) {
         let done = (x - l.x) / (r.x - l.x);
         let d = l.d + (r.d - l.d) * done;
@@ -191,6 +191,8 @@ let Renderer = {
    
     for (let segmentIndex in world.segments) {
       let segment = world.segments[segmentIndex];
+      if (segment.walls.length == 0) continue;
+
       for (let y = 0; y < screenh; y++) {
         let row = [];
   
@@ -237,10 +239,8 @@ let Renderer = {
 
         let intersections = world.lineIntersect(world.getSegmentLines(segmentIndex), {a: {x: luv.u, y: luv.v}, b: {x: luv.u + (ruv.u - luv.u) * 200, y: luv.v + (ruv.v - luv.v) * 200}});
         let inside = intersections.length % 2 == 1;
-        //inside = true;
 
         let lastDone = 0;
-
         for (let x = 0; x < screenw; x++) {
           let done = x / screenw;
           for (let i of intersections) {

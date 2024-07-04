@@ -26,8 +26,13 @@ let buttonRenderers = {
   },
   texture: button => {
     let c = hoveredButton == button ? button.hoverColor : button.color;
-    Renderer.renderTexture(button.texture, button.x, button.y, button.align, textures[button.texture].width, 9, button.d, 1, c || [255, 255, 255]);
-    return {x: button.x, y: button.y, w: textures[button.texture].width, h: 9};
+    let bounds = {x: button.x, y: button.y, w: button.w || textures[button.texture].width, h: button.h || 9};
+
+    Renderer.renderTexture(button.texture, bounds.x, bounds.y, button.align, bounds.w, bounds.h, button.d, 1, c || [255, 255, 255]);
+    return bounds;
+  },
+  none: button => {
+    return {x: button.x, y: button.y, w: button.w, h: button.h};
   },
 };
 
@@ -62,10 +67,10 @@ function setup() {
 
   setScene(MainMenu);
 
-  //Game.world = new World(levels["chapter 1"]["level 1"]);
-  //setScene(Game);
+  Game.world = new World(levels["chapter 1"]["level 1"]);
+  setScene(Game);
 
-  setScene(Editor);
+  //setScene(Editor);
   
   frameRate(fps);
 }
@@ -101,10 +106,10 @@ function keyReleased(e) {
   if (scene?.keyReleased) scene.keyReleased(e);
 }
 function mousePressed(e) {
-  if (scene?.mousePressed) scene.mousePressed(e);
+  if (!hoveredButton && scene?.mousePressed) scene.mousePressed(e);
 }
 function mouseReleased(e) {
-  if (scene?.mouseReleased) scene.mouseReleased(e);
+  if (!hoveredButton && scene?.mouseReleased) scene.mouseReleased(e);
 
   if (hoveredButton) hoveredButton.callback(e);
 }
@@ -129,7 +134,7 @@ function mouseMoved(e) {
 function mouseDragged(e) {
   pmousePos = {x: mousePos.x, y: mousePos.y};
   mousePos = {x: e.clientX / pixelSize, y: e.clientY / pixelSize};
-  
+
   if (scene?.mouseDragged) scene.mouseDragged(e);
 }
 
@@ -161,7 +166,7 @@ function draw() {
     let renderer = buttonRenderers[button.renderer];
     let bounds = renderer(button);
 
-    if (mousePos.x > bounds.x && mousePos.y > bounds.y && mousePos.x < bounds.x + bounds.w && mousePos.y < bounds.y + bounds.h) {
+    if (inBounds(mousePos, bounds)) {
       hoveredButton = button;
       renderer(button)
     }
@@ -178,3 +183,13 @@ function rotateVector(v, angle) {
     y: v.x * Math.sin(angle) + v.y * Math.cos(angle)
   }
 }
+
+function inBounds(p, bounds) {
+  return (p.x > bounds.x && p.y > bounds.y && p.x < bounds.x + bounds.w && p.y < bounds.y + bounds.h);
+}
+
+window.oncontextmenu = (e) => {
+  e.preventDefault(); 
+  e.stopPropagation(); 
+  return false;
+};

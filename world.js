@@ -127,8 +127,8 @@ class World {
     data.vertices = this.vertices;
     data.walls = this.walls;
     data.segments = this.segments;
-    data.entities = [];
 
+    data.entities = [];
     for (let i = 0; i < this.entities.length; i++) {
       data.entities[i] = {};
       let e = data.entities[i];
@@ -139,6 +139,11 @@ class World {
       e.dir = en.dir;
       e.vel = en.vel;
       e.slots = en.slots;
+    }
+
+    data.vertices = [];
+    for (let i = 0; i < this.vertices.length; i++) {
+      data.vertices[i] = this.vertices[i] ? {x: this.vertices[i].x, y: this.vertices[i].y} : undefined;
     }
 
     return JSON.stringify(data);

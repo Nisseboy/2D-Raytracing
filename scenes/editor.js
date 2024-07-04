@@ -17,12 +17,20 @@ let Editor = {
 
   snapping: true,
   snapDist: 0.3,
+  
+  segmentPanelOpen: false,
+  segmentPanelScroll: 0,
+  selectedSegment: undefined,
+
+  propertyPanelOpen: false,
+
+  panelWidth: 60,
 
   hoveredColor: [0, 255, 255, 255],
   selectedColor: [200, 200, 0, 255],
 
   init() {
-    
+
   },
 
   start() {
@@ -35,32 +43,69 @@ let Editor = {
   },
   
   update() {
-    menuButtons.push({
-      text: "help",
+    let world = Editor.world;
+    Editor.hovered = undefined;
 
-      callback: e => {window.open("https://github.com/Nisseboy/2D-Raytracing/blob/master/docs/editor.md")},
-    });
-    menuButtons.push({
-      text: "3d",
+    if (Editor.selectedSegment == undefined) {
+      menuButtons.push({
+        text: "help",
 
-      callback: e => {Editor.playButton(false)},
-    });
-    menuButtons.push({
-      renderer: "texture",
+        callback: e => {window.open("https://github.com/Nisseboy/2D-Raytracing/blob/master/docs/editor.md")},
+      });
+      menuButtons.push({
+        text: "3d",
 
-      texture: "uisnapping",
-      color: [255, 255, Editor.snapping ? 0 : 255, 255],
+        callback: e => {Editor.playButton(false)},
+      });
+      menuButtons.push({
+        renderer: "texture",
 
-      callback: () => {Editor.snapping = !Editor.snapping},
-    });
+        texture: "uisegments",
+
+        callback: () => {Editor.segmentPanelOpen = true},
+      });
+      menuButtons.push({
+        renderer: "texture",
+
+        texture: "uisnapping",
+        color: [255, 255, Editor.snapping ? 0 : 255, 255],
+
+        callback: () => {Editor.snapping = !Editor.snapping},
+      });
+
+      if (Editor.segmentPanelOpen)
+        Editor.renderSegmentPanel();
+    } else {
+      menuButtons.push({
+        text: "done",
+        x: screenw / 2,
+        y: screenh - 1,
+        align: "bc",
+
+        callback: () => {
+          let selected = Editor.selected;
+          let selectedSegment = Editor.selectedSegment;
+
+          selectedSegment.walls = [];
+
+          for (let i = 0; i < selected.length; i++) {
+            selectedSegment.walls.push(world.walls.indexOf(selected[i]));
+          }
+          world.precalc();
+
+          Editor.segmentPanelOpen = true;
+          Editor.selectedSegment = undefined;
+          selected.length = 0;
+        }
+      });
+    }
+
 
     let movement = {y: getKeyPressed("Walk Back") - getKeyPressed("Walk Forward"), x: getKeyPressed("Walk Right") - getKeyPressed("Walk Left")};
     Editor.pos.x += movement.x;
     Editor.pos.y += movement.y;
 
-    let world = Editor.world;
-    Editor.hovered = undefined;
-
+    if (Editor.selectedSegment == undefined)
     for (let i = 0; i < world.vertices.length; i++) {
       let vertex = world.vertices[i];
       if (vertex == undefined) continue;
@@ -71,7 +116,7 @@ let Editor = {
         Editor.hovered = vertex;
       }
 
-      Renderer.renderCross(pt.x, pt.y, 0, Editor.hovered == vertex ? Editor.hoveredColor : Editor.selected.includes(vertex) ? Editor.selectedColor : [255, 0, 0, 255]);
+      Renderer.renderCross(pt.x, pt.y, 6, Editor.getHighlightColor(vertex, [255, 0, 0, 255]));
     }
     
     for (let i = 0; i < world.walls.length; i++) {
@@ -92,12 +137,14 @@ let Editor = {
       for (let i = 0; i < pts.length; i++) {
         let pt = pts[i];
   
-        Renderer.renderPoint(pt.x, pt.y, 1, Editor.hovered == wall ? Editor.hoveredColor : Editor.selected.includes(wall) ? Editor.selectedColor : [255, 255, 255, 255]);
+        Renderer.renderPoint(pt.x, pt.y, 8, Editor.getHighlightColor(wall));
       }
     }
 
     for (let segmentIndex in world.segments) {
       let segment = world.segments[segmentIndex];
+      if (segment.walls.length == 0) continue;
+
       for (let y = 0; y < screenh; y++) {
         let row = [];
         
@@ -106,16 +153,17 @@ let Editor = {
         let luv = {u: l.x, v: l.y};
         let ruv = {u: r.x, v: r.y};
 
-        let intersections = world.lineIntersect(world.getSegmentLines(segmentIndex), {a: mouseWorld, b: {x: 10000.1, y: 0.1}});
-        if (!Editor.hovered && intersections.length % 2 == 1) {
+        let intersections = world.lineIntersect(world.getSegmentLines(segmentIndex), {a: {x: luv.u, y: luv.v}, b: {x: luv.u + (ruv.u - luv.u) * 200, y: luv.v + (ruv.v - luv.v) * 200 + 1}});
+        let inside = intersections.length % 2 == 1;
+
+        if (intersections.length == 0) continue;
+
+        let intersections2 = world.lineIntersect(world.getSegmentLines(segmentIndex), {a: mouseWorld, b: {x: 10000.1, y: 0.1}});
+        if (!Editor.hovered && intersections2.length % 2 == 1) {
           Editor.hovered = segment;
         }
 
-        intersections = world.lineIntersect(world.getSegmentLines(segmentIndex), {a: {x: luv.u, y: luv.v}, b: {x: luv.u + (ruv.u - luv.u) * 200, y: luv.v + (ruv.v - luv.v) * 200 + 1}});
-        let inside = intersections.length % 2 == 1;
-
         let lastDone = 0;
-
         for (let x = 0; x < screenw; x++) {
           let done = x / screenw;
           for (let i of intersections) {
@@ -142,13 +190,8 @@ let Editor = {
           c[2] = tex.pixels[index+2];
           c[3] = tex.pixels[index+3];
 
-          let c2;
-          if (Editor.hovered == segment) {
-            c2 = Editor.hoveredColor;
-          }
-          if (Editor.selected.includes(segment)) {
-            c2 = Editor.selectedColor;
-          }
+          let c2 = Editor.getHighlightColor(segment, 0);
+          
           if (c2) {
             c[0] = (c2[0] + c[0]) / 2;
             c[1] = (c2[1] + c[1]) / 2;
@@ -157,7 +200,7 @@ let Editor = {
   
           row.push(c);
         }
-        Renderer.buffer.push({y: y, d: 5, col: row});
+        Renderer.buffer.push({y: y, d: 9, col: row});
       }
     } 
 
@@ -173,6 +216,13 @@ let Editor = {
     let hovered = Editor.hovered;
     let selected = Editor.selected;
     let world = Editor.world;
+
+    if (Editor.selectedSegment) {
+      if (hovered && hovered.a != undefined) {
+        selected.push(hovered);
+      }
+      return;
+    }
 
     let shift = pressed[16];
     let ctrl = pressed[17];
@@ -316,7 +366,27 @@ let Editor = {
     if (keyCode == getKey("Pause")) Editor.backButton();
   },
 
+  mouseWheel(e) {
+    if (Editor.segmentPanelOpen) Editor.segmentPanelScroll += -Math.floor(e.delta / pixelSize);
+    Editor.segmentPanelScroll = Math.min(Editor.segmentPanelScroll, 0);
+    Editor.segmentPanelScroll = Math.max(Editor.segmentPanelScroll, -Math.max((Math.ceil((Editor.world.segments.length + 1) / 4)) * 13, screenh) + screenh);
+  },
+
   backButton() {
+    if (Editor.segmentPanelOpen) {
+      Editor.segmentPanelOpen = false;
+      return;
+    }
+    if (Editor.propertyPanelOpen) {
+      Editor.propertyPanelOpen = false;
+      return;
+    }
+    if (Editor.selectedSegment != undefined) {
+      Editor.selectedSegment = undefined;
+      Editor.segmentPanelOpen = true;
+      return;
+    }
+
     inEditor = false;
     setScene(MainMenu);
   },
@@ -325,6 +395,75 @@ let Editor = {
     Game.world = new World(Editor.world.export());
     Game.world.simulated = simulate;
     setScene(Game);
+  },
+
+  getHighlightColor(object, base = [255, 255, 255, 255]) {
+    return Editor.hovered == object ? Editor.hoveredColor : Editor.selected.includes(object) ? Editor.selectedColor : base
+  },
+
+  renderSegmentPanel() {
+    let world = Editor.world;
+    let segments = world.segments;
+
+    let x = screenw - Editor.panelWidth - 1;
+
+    Renderer.renderRectangle(x, 0, screenw, screenh, 2, [20, 20, 20, 255]);
+    x++;
+
+    let y = Editor.segmentPanelScroll + 1;
+    for (let i = 0; i < segments.length; i++) {
+      let segment = segments[i];
+
+      let button = {
+        renderer: "texture", 
+        texture: world.textures[segment.floorTexture], 
+
+        d: 1.9, 
+
+        x: x, 
+        y: y, 
+        w: 12, 
+        h: 12, 
+        align: "tl",
+
+        callback: () => {
+          Editor.selectedSegment = segment;
+          Editor.selected.length = 0;
+          Editor.segmentPanelOpen = false;
+        }
+      };
+      buttons.push(button);
+
+      if (inBounds(mousePos, button)) Editor.hovered = segment;
+
+      x += 13;
+      if (x > screenw - 13) {
+        x = screenw - Editor.panelWidth;
+        y += 13;
+      }
+    }
+    let button = {
+      renderer: "texture", 
+      texture: "uiplus", 
+
+      d: 1.9, 
+
+      x: x, 
+      y: y, 
+      w: 12, 
+      h: 12, 
+      align: "tl",
+
+      callback: () => {
+        segments.push({walls: [], bottom: 0, top: 1, floorTexture: 0, ceilingTexture: 1, topWallTexture: 1, bottomWallTexture: 0});
+      }
+    };
+    buttons.push(button);
+
+    x = screenw - Editor.panelWidth - 1 + 14;
+    y = 1;
+
+    Renderer.renderPoint(x, y);
   },
 
   stop() {

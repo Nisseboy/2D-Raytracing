@@ -12,7 +12,7 @@ let animals = {
   rat: {
     name: "rat", 
     type: "critter", 
-    texture: "rat", 
+    texture: "entities/rat1", 
     height: 0.2,
     speed: 1, 
     slotAmount: 1, 
