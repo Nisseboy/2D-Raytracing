@@ -17,6 +17,7 @@ You select objects by clicking on them, you can also ctrl+click to select multip
 
 There are a few buttons on the left side:
 * Help brings this page up
+* File opens the saving and loading menu
 * 3D Enters a 3d view of the map
 * Segments opens a panel where you can create new segments and define segments by selecting walls in a clockwise order
 * Snapping toggles snapping which means that you can only move vertices to certain places

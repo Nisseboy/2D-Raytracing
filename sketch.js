@@ -69,8 +69,8 @@ function setup() {
 
   
   editorChapters = JSON.parse(localStorage.getItem("editorChapters") || "[]");
-  for (let i in editorChapters) {
-    levels[i] = editorChapters[i];
+  for (let i of editorChapters) {
+    chapters.push(i);
   }
 
   setScene(MainMenu);
@@ -157,7 +157,7 @@ function draw() {
   for (let i = 0; i < menuButtons.length; i++) {
     let button = menuButtons[i];
 
-    if (button.x == undefined) button.x = 0 + (button.dpos?.x || 0);
+    if (button.x == undefined) button.x = 1 + (button.dpos?.x || 0);
     if (button.y == undefined) button.y = (i + 1) * 10 + (button.dpos?.y || 0);
     buttons.push(button);
   }

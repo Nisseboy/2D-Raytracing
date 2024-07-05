@@ -4,7 +4,7 @@ let Editor = {
   tempWorld: undefined,
   inEditor: false,
 
-  chapterName: "test editor chapter",
+  chapterName: undefined,
   chapter: undefined,
   level: undefined, 
   world: undefined,
@@ -40,16 +40,12 @@ let Editor = {
   },
 
   loadLevel(level) {
-    Editor.chapter = levels[Editor.chapterName] || {};
-    levels[Editor.chapterName] = Editor.chapter;
-    if (editorChapters[Editor.chapterName] != undefined) editorChapters[Editor.chapterName] = Editor.chapter;
+    Editor.level = level;
 
-    let world = level.world || levels[level.chapter][level.name];
+    Editor.chapter = chapters.find(e => {return e.name == Editor.chapterName});
+
+    let world = level.data;
     Editor.world = new World(world);
-
-    if (!Editor.level) Editor.level = {};
-    Editor.level.chapter = Editor.chapterName;
-    Editor.level.name = level.name;
   },
 
   start() {
@@ -57,28 +53,29 @@ let Editor = {
       setScene(EditorIntroduction);
       return;
     }
+
+    if (Editor.chapterName == undefined) {
+      setScene(ChapterPicker);
+      return;
+    }
+
+    if (!Editor.level) {
+      EditorLevelCreator.scene = MainMenu;
+      setScene(EditorLevelCreator);
+
+      return;
+
+    } else {
+      if (!Editor.world) Editor.loadLevel(Editor.level);
+    }
     
     if (Editor.inEditor) {
       Game.world = Editor.tempWorld;
-    } else {
-
-      if (!Editor.level) {
-
-        LevelPicker.callback = (level) => {
-          Editor.loadLevel(level);
-          setScene(Editor);
-        }
-        LevelPicker.scene = MainMenu;
-        setScene(LevelPicker);
-
-        return;
-      } else {
-        if (!Editor.world) Editor.loadLevel(Editor.level);
-      }
     }
     Editor.inEditor = true;
 
     mouseWorld = toWorld(mousePos);
+    Editor.selected.length = 0;
   },
   
   update() {
@@ -95,7 +92,7 @@ let Editor = {
         callback: e => {window.open("https://github.com/Nisseboy/2D-Raytracing/blob/master/docs/editor.md")},
       });
       menuButtons.push({
-        text: "save",
+        text: "file",
 
         callback: e => {Editor.panel = "save"},
       });
@@ -476,8 +473,9 @@ let Editor = {
   },
 
   mouseWheel(e) {
-    if (Editor.panel) {
-      let panel = Editor.panels[Editor.panel];
+    let panel = Editor.panels[Editor.panel];
+
+    if (panel && panel.scroll != undefined) {
       panel.scroll += -Math.floor(e.delta / pixelSize);
       panel.scroll = Math.min(panel.scroll, 0);
       panel.scroll = Math.max(panel.scroll, -Math.max(panel.height(), screenh) + screenh);
@@ -688,12 +686,15 @@ let Editor = {
       {text: Editor.level.name, type: "header"},
 
       {text: "rename level", callback: () => {
-        let old = Editor.level.name;
+        let oldIndex = Editor.chapter.levels.findIndex(e => e.name == Editor.level.name);
         Editor.level.name = prompt("New Level Name")
+        let newIndex = Editor.chapter.levels.findIndex(e => e.name == Editor.level.name);
+        if (newIndex == -1) newIndex = Editor.chapter.length;
 
-        if (Editor.chapter[old]) {
-          delete Editor.chapter[old];
-          Editor.chapter[Editor.level.name] = world.export();
+        if (Editor.chapter.levels[oldIndex]) {
+          delete Editor.chapter.levels[oldIndex];
+
+          Editor.chapter.levels[newIndex] = world.export();
         }
 
         localStorage.setItem("editorChapters", JSON.stringify(editorChapters));
@@ -702,33 +703,24 @@ let Editor = {
 
       {text: "save", type: "header"},
 
-      {text: "to level", callback: () => {
-        Editor.chapter[Editor.level.name] = world.export();
+      {text: "to chapter", callback: () => {
+        let index = Editor.chapter.levels.findIndex(e => e.name == Editor.level.name);
+        if (index == -1) index = Editor.chapter.levels.length;
+
+        Editor.chapter.levels[index] = {name: Editor.level.name, data: world.export()};
         localStorage.setItem("editorChapters", JSON.stringify(editorChapters));
       }},
 
       {text: "to clipboard", callback: () => { 
-        navigator.clipboard.writeText(world.export());
+        navigator.clipboard.writeText(JSON.stringify({name: Editor.level.name, data: world.export()}));
       }},
 
 
-      {text: "load", type: "header"},
+      {text: "new", type: "header"},
 
-      {text: "from level", callback: () => {
-        Editor.inEditor = false;
-        setScene(MainMenu);
-        Editor.level = undefined;
-        setScene(Editor);
-
-        Editor.selected.length = 0;
-      }},
-
-      {text: "from clipboard", callback: () => { 
-        navigator.clipboard.readText().then(e => {
-          Editor.loadLevel({name: "from clipboard", world: e});
-        });
-
-        Editor.selected.length = 0;
+      {text: "new level", callback: () => {
+        EditorLevelCreator.scene = Editor;
+        setScene(EditorLevelCreator);
       }},
     ]
 

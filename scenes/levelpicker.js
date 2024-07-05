@@ -8,17 +8,16 @@ let LevelPicker = {
   },
 
   update() {
-    for (let i in levels) {
-      let chapter = levels[i];
+    for (let i in chapters) {
+      let chapter = chapters[i];
 
-      menuButtons.push({text: i, callback: e => {LevelPicker.openChapter = i}});
+      menuButtons.push({text: chapter.name, callback: e => {LevelPicker.openChapter = i}});
       if (i == LevelPicker.openChapter) {
-        for (let j in chapter) {
-          let levelString = chapter[j];
-          if (typeof(levelString) != "string") levelString = JSON.stringify(levelString);
+        for (let j in chapter.levels) {
+          let level = chapter.levels[j];
 
-          menuButtons.push({text: j, dpos: {x: 4, y: 0}, callback: e => {
-            LevelPicker.callback({world: levelString, chapter: i, name: j});
+          menuButtons.push({text: level.name, dpos: {x: 4, y: 0}, callback: e => {
+            LevelPicker.callback(level);
           }});
         }
       }
