@@ -1,10 +1,13 @@
-let inEditor = false;
-
 let mouseWorld;
 
 let Editor = {
   tempWorld: undefined,
-  world: new World(levels["chapter 1"]["level 2"]),
+  inEditor: false,
+
+  chapterName: "test editor chapter",
+  chapter: undefined,
+  level: undefined, 
+  world: undefined,
 
   pos: {x: 0, y: 0},
   gridSize: 10,
@@ -22,6 +25,7 @@ let Editor = {
   panels: {
     segments: {scroll: 0, height: () => {return Math.ceil((Editor.world.segments.length + 1) / 4) * 13}},
     properties: {scroll: 0, tab: 0},
+    save: {scroll: 0},
   },
   
   selectedSegment: undefined,
@@ -35,16 +39,44 @@ let Editor = {
 
   },
 
+  loadLevel(level) {
+    Editor.chapter = levels[Editor.chapterName] || {};
+    levels[Editor.chapterName] = Editor.chapter;
+    if (editorChapters[Editor.chapterName] != undefined) editorChapters[Editor.chapterName] = Editor.chapter;
+
+    let world = level.world || levels[level.chapter][level.name];
+    Editor.world = new World(world);
+
+    if (!Editor.level) Editor.level = {};
+    Editor.level.chapter = Editor.chapterName;
+    Editor.level.name = level.name;
+  },
+
   start() {
     if (!localStorage.getItem("hasEnteredEditor")) {
       setScene(EditorIntroduction);
       return;
     }
-
-    if (inEditor) {
+    
+    if (Editor.inEditor) {
       Game.world = Editor.tempWorld;
+    } else {
+
+      if (!Editor.level) {
+
+        LevelPicker.callback = (level) => {
+          Editor.loadLevel(level);
+          setScene(Editor);
+        }
+        LevelPicker.scene = MainMenu;
+        setScene(LevelPicker);
+
+        return;
+      } else {
+        if (!Editor.world) Editor.loadLevel(Editor.level);
+      }
     }
-    inEditor = true;
+    Editor.inEditor = true;
 
     mouseWorld = toWorld(mousePos);
   },
@@ -61,6 +93,11 @@ let Editor = {
         text: "help",
 
         callback: e => {window.open("https://github.com/Nisseboy/2D-Raytracing/blob/master/docs/editor.md")},
+      });
+      menuButtons.push({
+        text: "save",
+
+        callback: e => {Editor.panel = "save"},
       });
       menuButtons.push({
         text: "3d",
@@ -88,6 +125,9 @@ let Editor = {
 
       if (Editor.panel == "properties") 
         Editor.renderPropertiesPanel();
+
+      if (Editor.panel == "save") 
+        Editor.renderSavePanel();
     } else {
       menuButtons.push({
         text: "done",
@@ -134,6 +174,9 @@ let Editor = {
     
     for (let i = 0; i < world.walls.length; i++) {
       let wall = world.walls[i];
+
+      if (wall == undefined) continue;
+
       let a = toScreen(world.vertices[wall.a]);
       let b = toScreen(world.vertices[wall.b]);
 
@@ -156,7 +199,7 @@ let Editor = {
 
     for (let segmentIndex in world.segments) {
       let segment = world.segments[segmentIndex];
-      if (segment.walls.length == 0) continue;
+      if (segment == undefined || segment.walls.length == 0) continue;
 
       for (let y = 0; y < screenh; y++) {
         let row = [];
@@ -275,6 +318,9 @@ let Editor = {
         }
       }
     }
+    if (mouseButton == RIGHT) {
+      if (hovered) Editor.removeObject(hovered);
+    }
   },
   mouseDragged(e) {
     mouseWorld = toWorld(mousePos);
@@ -324,6 +370,7 @@ let Editor = {
     let world = Editor.world;
     for (let i = 0; i < world.vertices.length; i++) {
       let v = world.vertices[i];
+      if (v == undefined) continue;
 
       if (v == object || v == undefined) continue;
       else {
@@ -336,6 +383,8 @@ let Editor = {
             world.vertices[index] = undefined;
 
             for (let wall of world.walls) {
+              if (wall == undefined) continue;
+
               if (wall.a == index) wall.a = i;
               if (wall.b == index) wall.b = i;
             }
@@ -375,8 +424,55 @@ let Editor = {
     world.precalc();
   },
 
+  removeObject(object) {
+    let world = Editor.world;
+    let selected = Editor.selected;
+
+    let type = object.a != undefined ? 0 : (object.walls != undefined ? 1 : (object.pos ? 2 : 3));
+
+    switch (type) {
+      case 0: //wall
+        let index = world.walls.indexOf(object);
+        world.walls[index] = undefined;
+        for (let i = 0; i < world.segments.length; i++) {
+          if (world.segments[i].walls.includes(index)) world.segments[i].walls.length = 0;
+        }
+        break;
+
+      case 1: //segment
+        object.walls.length = 0;
+
+        world.precalc();
+        break;
+
+      case 2: //entity
+        world.entities[world.entities.indexOf(object)] = undefined
+        break;
+
+      case 3: //vertex
+        let vertexIndex = world.vertices.indexOf(object);
+        world.vertices[vertexIndex] = undefined;
+        for (let i of world.walls) {
+          if (i == undefined) continue;
+          if (i.a == vertexIndex || i.b == vertexIndex) Editor.removeObject(i);
+        }
+
+        world.precalc();
+        break;
+    }
+
+    let index = selected.indexOf(object);
+    if (index != -1) selected.splice(index, 1);
+  },
+
   keyReleased() {
     if (keyCode == getKey("Pause")) Editor.backButton();
+
+    if (keyCode == 46 || keyCode == 8) { //delete/backspace
+      for (let i = 0; i < Editor.selected.length; i) {
+        Editor.removeObject(Editor.selected[i]);
+      }
+    }
   },
 
   mouseWheel(e) {
@@ -399,7 +495,7 @@ let Editor = {
       return;
     }
 
-    inEditor = false;
+    Editor.inEditor = false;
     setScene(MainMenu);
   },
   playButton(simulate) {
@@ -425,6 +521,7 @@ let Editor = {
     let y = Editor.panels.segments.scroll + 1;
     for (let i = 0; i < segments.length; i++) {
       let segment = segments[i];
+      if (segment == undefined) continue;
 
       let button = {
         renderer: "texture", 
@@ -478,12 +575,6 @@ let Editor = {
     let selected = Editor.selected;
     let tab = Editor.panels.properties.tab;
 
-    let x = screenw - Editor.panelWidth - 1;
-    let y = Editor.panels.segments.scroll + 1;
-
-    Renderer.renderRectangle(x, 0, screenw, screenh, 2, [20, 20, 20, 255]);
-    x++;
-
     let types = [[], [], []];
     for (let i = 0; i < selected.length; i++) {
       let s = selected[i];
@@ -497,6 +588,13 @@ let Editor = {
       }
     }
     tab = Editor.panels.properties.tab;
+    if (types[tab].length == 0) return;
+
+    let x = screenw - Editor.panelWidth - 1;
+    let y = Editor.panels.segments.scroll + 1;
+
+    Renderer.renderRectangle(x, 0, screenw, screenh, 2, [20, 20, 20, 255]);
+    x++;
 
     for (let i = 0; i < 3; i++) {
       if (types[i].length != 0)
@@ -574,6 +672,83 @@ let Editor = {
           y += 17;
           break;
       }
+    }
+  },
+
+  renderSavePanel() {
+    let world = Editor.world;
+    
+    let x = screenw - Editor.panelWidth - 1;
+    let y = 1;
+
+    Renderer.renderRectangle(x, 0, screenw, screenh, 2, [20, 20, 20, 255]);
+    x++;
+
+    let saveButtons = [
+      {text: Editor.level.name, type: "header"},
+
+      {text: "rename level", callback: () => {
+        let old = Editor.level.name;
+        Editor.level.name = prompt("New Level Name")
+
+        if (Editor.chapter[old]) {
+          delete Editor.chapter[old];
+          Editor.chapter[Editor.level.name] = world.export();
+        }
+
+        localStorage.setItem("editorChapters", JSON.stringify(editorChapters));
+      }},
+
+
+      {text: "save", type: "header"},
+
+      {text: "to level", callback: () => {
+        Editor.chapter[Editor.level.name] = world.export();
+        localStorage.setItem("editorChapters", JSON.stringify(editorChapters));
+      }},
+
+      {text: "to clipboard", callback: () => { 
+        navigator.clipboard.writeText(world.export());
+      }},
+
+
+      {text: "load", type: "header"},
+
+      {text: "from level", callback: () => {
+        Editor.inEditor = false;
+        setScene(MainMenu);
+        Editor.level = undefined;
+        setScene(Editor);
+
+        Editor.selected.length = 0;
+      }},
+
+      {text: "from clipboard", callback: () => { 
+        navigator.clipboard.readText().then(e => {
+          Editor.loadLevel({name: "from clipboard", world: e});
+        });
+
+        Editor.selected.length = 0;
+      }},
+    ]
+
+    for (let i of saveButtons) {
+      switch (i.type) {
+        case "header":
+          Renderer.renderText(i.text, x, y + 3);
+          break;
+        default:
+          buttons.push({
+            text: i.text,
+            x: x,
+            y: y,
+    
+            callback: i.callback,
+          });
+          break;
+      }
+
+      y += 10;
     }
   },
 

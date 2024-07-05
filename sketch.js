@@ -15,6 +15,8 @@ let debug = false;
 let pmousePos = {x: 0, y: 0};
 let mousePos = {x: 0, y: 0};
 
+let editorChapters = [];
+
 let buttons = [];
 let menuButtons = [];
 let hoveredButton;
@@ -65,12 +67,18 @@ function setup() {
   pixelSize = m / screenw;
   Renderer.init(screenw, screenh);
 
+  
+  editorChapters = JSON.parse(localStorage.getItem("editorChapters") || "[]");
+  for (let i in editorChapters) {
+    levels[i] = editorChapters[i];
+  }
+
   setScene(MainMenu);
 
   //Game.world = new World(levels["chapter 1"]["level 1"]);
   //setScene(Game);
 
-  setScene(Editor);
+  //setScene(Editor);
   
   frameRate(fps);
 }

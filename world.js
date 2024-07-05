@@ -45,6 +45,8 @@ class World {
 
   precalc() {
     for (let i of this.walls) {
+      if (i == undefined) continue;
+
       let line = {a: this.vertices[i.a], b: this.vertices[i.b]};
 
       let diff = {x: line.b.x - line.a.x, y: line.b.y - line.a.y};
@@ -103,6 +105,8 @@ class World {
 
   getSegment(pos) {
     for (let i = 0; i < this.segments.length; i++) {
+      if (this.segments[i] == undefined) continue;
+
       let intersections = this.lineIntersect(this.getSegmentLines(i), {a: pos, b: {x: 100000.1, y: 0.1}});
       if (intersections.length % 2 == 1) return i;
     }

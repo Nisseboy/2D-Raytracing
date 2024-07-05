@@ -27,7 +27,7 @@ let PauseScreen = {
     setScene(Game);
   },
   exitButton(e) {
-    if (inEditor) {
+    if (Editor.inEditor) {
       setScene(Editor);
     } else {
       setScene(MainMenu);

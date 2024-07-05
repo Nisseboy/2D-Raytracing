@@ -1,54 +1,18 @@
 let MainMenu = {
-  selectedLevelIndex: -1,
-  openedLevelChapterIndex: 0,
-
   init() {
     
   },
 
   start() {
-    MainMenu.selectedLevelIndex = -1;
+    
   },
   
   update() {    
-    if (MainMenu.selectedLevelIndex != -1) {
-      for (let i in levels) {
-        let chapter = levels[i];
-
-        menuButtons.push({text: i, callback: e => {MainMenu.openedLevelChapterIndex = i}});
-        if (i == MainMenu.openedLevelChapterIndex) {
-          for (let j in chapter) {
-            menuButtons.push({text: j, dpos: {x: 4, y: 0}, callback: e => {
-              let callback = e => {Game.world = new World(chapter[j]); setScene(Game)};
-
-              if (Game.world)
-                MainMenu.warning = {
-                  text: "current level progress will be lost",
-                  callback: callback,
-                }
-              else callback();
-            }});
-          }
-        }
-      }
-
-      buttons.push({
-        renderer: "text",
-        text: "back",
-        x: screenw - 1,
-        y: 1,
-        align: "tr",
-        d: 0,
-
-        callback: MainMenu.newGameButton,
-      });
-    } else {
-      if (Game.world) menuButtons.push({text: "continue", callback: MainMenu.continueButton});
-      menuButtons.push(
-        {text: "play", callback: MainMenu.newGameButton},
-        {text: "editor", callback: MainMenu.editorButton},
-      );
-    }
+    if (Game.world) menuButtons.push({text: "continue", callback: MainMenu.continueButton});
+    menuButtons.push(
+      {text: "play", callback: MainMenu.newGameButton},
+      {text: "editor", callback: MainMenu.editorButton},
+    );
 
     if (MainMenu.warning) {
       let text = MainMenu.warning.text;
@@ -83,8 +47,20 @@ let MainMenu = {
     setScene(Game);
   },
   newGameButton(e) {
-    if (MainMenu.selectedLevelIndex != -1) MainMenu.selectedLevelIndex = -1;
-    else MainMenu.selectedLevelIndex = 0;
+    LevelPicker.callback = (level) => {
+      let callback = e => {Game.world = new World(level.world); setScene(Game)};
+
+      if (Game.world) {
+        MainMenu.warning = {
+          text: "current level progress will be lost",
+          callback: callback,
+        }
+        setScene(MainMenu);
+      }
+      else callback();
+    }
+    LevelPicker.scene = MainMenu;
+    setScene(LevelPicker);
   },
   editorButton() {
     setScene(Editor);

@@ -93,6 +93,8 @@ let Renderer = {
 
     for (let i = 0; i < world.walls.length; i++) {
       let wall = world.walls[i];
+      if (wall == undefined) continue;
+
       let tex = textures[world.textures[wall.texture]];
       let segment = world.segments[world.getWallSegment(wall, player.pos)];
       if (!segment) continue;
@@ -203,7 +205,7 @@ let Renderer = {
    
     for (let segmentIndex in world.segments) {
       let segment = world.segments[segmentIndex];
-      if (segment.walls.length == 0) continue;
+      if (segment == undefined || segment.walls.length == 0) continue;
 
       for (let y = 0; y < screenh; y++) {
         let row = [];
