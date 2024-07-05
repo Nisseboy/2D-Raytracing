@@ -338,7 +338,7 @@ let Renderer = {
       if (size < 0) continue;
       let wallSize = focusPlane / d * 0.01;
       
-      let X = Math.floor(-relativePos.x * focusPlane / d + screenw / 2 + tex.width * size / 2);
+      let X = Math.floor(-relativePos.x * focusPlane / d + screenw / 2 - tex.width * size / 2);
       let Y = Math.floor((-yShearReal - (entity.pos.z + Math.sin(entity.bob) * entity.animal.bobStrength) * focusPlane / d + (wallSize / 2) * screenh) + screenh / 2 - tex.height * size);
       let w = Math.floor(tex.width * size);
       let h = Math.floor(tex.height * size);
