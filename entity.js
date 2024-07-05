@@ -140,10 +140,12 @@ class Entity {
     let newPos = {x: this.pos.x + v.x, y: this.pos.y, z: this.pos.z + v.z};
     let crossed = world.hasCrossedWalls(world.walls, this.pos, newPos);
     if (!crossed || canCross(crossed)) this.pos = newPos;
+    else this.vel.x *= -1;
 
     newPos = {x: this.pos.x, y: this.pos.y + v.y, z: this.pos.z};
     crossed = world.hasCrossedWalls(world.walls, this.pos, newPos);
     if (!crossed || canCross(crossed)) this.pos = newPos;
+    else this.vel.y *= -1;
 
     let seg = world.segments[world.getSegment(this.pos)];
     if (seg) this.segment = seg;
