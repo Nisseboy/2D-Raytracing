@@ -63,6 +63,24 @@ class World {
       if (i.tileH == undefined) i.tileH = false;
       if (i.tileV == undefined) i.tileV = false;
     }
+
+    for (let i of this.segments) {
+      if (i == undefined) continue;
+
+      let props = [
+        ["floorTexture", 0],
+        ["ceilingTexture", 0],
+        ["topWallTexture", 0],
+        ["bottomWallTexture", 0],
+        ["topWallTextureTileH", false],
+        ["topWallTextureTileV", false],
+        ["bottomWallTextureTileH", false],
+        ["bottomWallTextureTileV", false],
+      ];
+      for (let j of props) 
+        if (i[j[0]] == undefined) 
+          i[j[0]] = j[1]
+    }
   }
   
   lineIntersect(lines, l2) {
@@ -112,7 +130,7 @@ class World {
     }
   }
 
-  getWallSegment(wall, pos, invert = false) {
+  getWallSide(wall, pos) {
     let line = {a: this.vertices[wall.a], b: this.vertices[wall.b]};
 
     let diff1 = {x: line.b.x - line.a.x, y: line.b.y - line.a.y};
@@ -123,11 +141,21 @@ class World {
 
     let diffAngle = -getDeltaAngle(a1, a2);
 
-    let segment;
-    if (Math.abs(diffAngle) > Math.PI) segment = wall.segments[invert ? 0 : 1];
-    else segment = wall.segments[invert ? 1 : 0];
+    return diffAngle > 0;
+  }
 
-    return segment;
+  getWallSegment(wall, pos, invert = false) {
+    return wall.segments[invert ^ this.getWallSide(wall, pos)];
+  }
+
+  hasCrossedWall(wall, pos1, pos2) {
+    return this.getWallSide(wall, pos1) != this.getWallSide(wall, pos2);
+  }
+  hasCrossedWalls(walls, pos1, pos2) {
+    for (let i = 0; i < walls.length; i++) {
+      if (this.hasCrossedWall(walls[i], pos1, pos2)) return walls[i];
+    }
+    return undefined;
   }
 
   export() {

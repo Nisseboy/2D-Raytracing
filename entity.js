@@ -7,6 +7,8 @@ class Entity {
     if (!pos.z) this.pos.z = 0;
     this.vel = {x: 0, y: 0, z: 0};
 
+    this.hp = this.animal.maxHP;
+
     this.dir = {x: 0, y: 0};
     
     this.slot = 0;
@@ -15,7 +17,7 @@ class Entity {
     
     this.bob = 0;
 
-    this.seg = {bottom: 0, top: 1};
+    this.segment = {bottom: 0, top: 1};
 
     //this.move({x: 0, y: 0});
 
@@ -24,8 +26,8 @@ class Entity {
   update() {
     if (this.owner) return;
     
-    if (this.pos.z < this.seg.bottom + 0.01) {
-      this.pos.z = this.seg.bottom;
+    if (this.pos.z < this.segment.bottom + 0.01) {
+      this.pos.z = this.segment.bottom;
       this.vel.x *= 0.7;
       this.vel.y *= 0.7;
       if (this.vel.z < -1) { if (this.animal.type == "critter" || this.animal.type == "grenade") this.vel.z *= -0.4; }
@@ -36,12 +38,15 @@ class Entity {
     
     this.move(this.vel, true);
     
-    if (this.pos.z > this.seg.top - this.animal.height - 0.05)  {
-      this.pos.z = this.seg.top - this.animal.height - 0.05;
+    if (this.pos.z > this.segment.top - this.animal.height - 0.05)  {
+      this.pos.z = this.segment.top - this.animal.height - 0.05;
       this.vel.z = 0;
     }
     
     switch(this.animal.type) {
+      case "player":
+        if (frameCount % 55 == 0 && this.pos.z < this.segment.bottom + 0.01 && Game.world.textures[this.segment.floorTexture].includes("nukage")) this.hurt(5);
+        break;
       case "critter":
         this.dir.x += (Math.random() - 0.5) / 1;
         this.moveRelative({x: 1, y: 0});
@@ -49,6 +54,20 @@ class Entity {
       default:
         break;
     }
+  }
+
+  hurt(hp) {
+    if (!Game.world.simulated) return;
+
+    this.hp -= hp;
+
+    if (this.hp <= 0) {
+      this.kill();
+    }
+  }
+
+  kill() {
+    if (this.animalType == "player") setScene(DeathScreen);
   }
   
   pickUp(entity) {
@@ -77,10 +96,10 @@ class Entity {
   }
   
   jump() {
-    if (this.pos.z > this.seg.bottom + 0.01) return;
+    if (this.pos.z > this.segment.bottom + 0.01) return;
 
     this.vel.z = this.animal.jumpStrength;
-    this.pos.z = this.seg.bottom + 0.01;
+    this.pos.z = this.segment.bottom + 0.01;
   }
   moveRelative(v, cheatMove = false) {
     this.move(rotateVector(v, this.dir.x), cheatMove);
@@ -108,30 +127,25 @@ class Entity {
     }
 
     let world = Game.world;
-    let newPos = {x: this.pos.x + v.x, y: this.pos.y + v.y, z: this.pos.z + v.z};
 
-    this.pos = newPos;
+    const canCross = (wall) => {
+      if (!crossed.divider) return false;
+      let segment = world.segments[world.getWallSegment(wall, this.pos, true)];
+      if (segment && segment.bottom - this.pos.z > 0.3) return false;
+      if (segment && segment.top - this.pos.z < this.animal.height) return false;
 
-    /*
-    if (gridPosNew.x < gridPos.x && (this.pos.x < 0 || world.get(gridPos)[2] != 0)) {
-      this.pos.x -= v.x;
-      gridPosNew.x = Math.floor(this.pos.x);
+      return true;
     }
-    if (gridPosNew.x > gridPos.x && (this.pos.x >= world.w || world.get(gridPosNew)[2] != 0)) {
-      this.pos.x -= v.x;
-      gridPosNew.x = Math.floor(this.pos.x);
-    }
-    if (gridPosNew.y < gridPos.y && (this.pos.y < 0 || world.get(gridPos)[1] != 0)) {
-      this.pos.y -= v.y;
-      gridPosNew.y = Math.floor(this.pos.y);
-    }
-    if (gridPosNew.y > gridPos.y && (this.pos.y >= world.h || world.get(gridPosNew)[1] != 0)) {
-      this.pos.y -= v.y;
-      gridPosNew.y = Math.floor(this.pos.y);
-    }
-    */
+
+    let newPos = {x: this.pos.x + v.x, y: this.pos.y, z: this.pos.z + v.z};
+    let crossed = world.hasCrossedWalls(world.walls, this.pos, newPos);
+    if (!crossed || canCross(crossed)) this.pos = newPos;
+
+    newPos = {x: this.pos.x, y: this.pos.y + v.y, z: this.pos.z};
+    crossed = world.hasCrossedWalls(world.walls, this.pos, newPos);
+    if (!crossed || canCross(crossed)) this.pos = newPos;
 
     let seg = world.segments[world.getSegment(this.pos)];
-    if (seg) this.seg = seg;
+    if (seg) this.segment = seg;
   }
 }

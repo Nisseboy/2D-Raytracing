@@ -48,7 +48,7 @@ let MainMenu = {
   },
   newGameButton(e) {
     LevelPicker.callback = (level) => {
-      let callback = e => {Game.world = new World(level.data); setScene(Game)};
+      let callback = e => {Game.level = level; Game.world = new World(level.data); setScene(Game)};
 
       if (Game.world) {
         MainMenu.warning = {

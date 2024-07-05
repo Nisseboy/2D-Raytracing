@@ -4,7 +4,7 @@ Each level is composed of a list of objects:
 * Vertices: These are the corners of walls and segments, create them by shift clicking, all vertices moved on top of other vertices will be merged
 * Walls: Walls need two vertices, create a wall by shift dragging from a vertex
 * Segments: These determine how a "room" looks, the height, lighting, floor, ceiling etc.
-* Entities: These can be anywhere and are things like enemies, items, rats, or barrels
+* Entities: These can be anywhere and are things like enemies, items, rats, or barrels, create them by shift clicking on a segment
 
 
 You select objects by clicking on them, you can also ctrl+click to select multiple objects, if you drag a selected object all other selected objects will move. Once you have selected at least one object a properties window will appear, A star on any value means that the objects you have selected have different values but they will become the same once you change it:
@@ -13,6 +13,19 @@ You select objects by clicking on them, you can also ctrl+click to select multip
   * Tex: The wall texture
   * TileH: Whether or not to tile the texture horizontally so it doesn't stretch
   * TileV: The same but vertically
+* Segments:
+  * Flor: Z position of floor
+  * Ceil: Z position of ceiling
+  * FlorTex: Texture of the floor
+  * CeilTex: Texture of the floor
+  * TopTex: Texture above the ceiling when there's a height difference between segments
+  * TopTexTileH: Same as with the walls
+  * TopTexTileV: Same as with the walls
+  * BotTex: Same as TopTex but below the floor instead
+  * BotTexTileH: Same as with the walls
+  * BotTexTileV: Same as with the walls
+* Entities:
+  * 
 
 
 There are a few buttons on the left side:

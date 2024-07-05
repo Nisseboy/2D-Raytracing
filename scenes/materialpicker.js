@@ -10,10 +10,11 @@ let MaterialPicker = {
       floor: [],
       ceiling: [],
       entities: [],
+      items: [],
       ui: [],
       other: [],
     };
-    let catsOrder = ["ui", "wall", "floor", "ceiling", "entities"];
+    let catsOrder = ["ui", "wall", "floor", "ceiling", "entities", "items"];
 
     outer: for (let i in textures) {
       for (let j of catsOrder) {
@@ -35,6 +36,11 @@ let MaterialPicker = {
 
       for (let i = 0; i < cat.length; i++) {
         if (x > screenw - w) { x = 1; y += w + 1; }
+
+        let split = cat[i].split("/");
+        let last = split[split.length - 1];
+        Renderer.renderText(last[last.length - 1], x + 2, y + 2, "tl", -0.1);
+
         buttons.push({
           renderer: "texture",
           texture: cat[i],

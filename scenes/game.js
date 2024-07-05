@@ -83,6 +83,11 @@ let Game = {
       Renderer.renderTexture(held.animal.texture, (screenw - 20) / 2, screenh - 40, "tl", 20, 40, 0.1);
     }
 
+    let hpColor = Renderer.mix([255, 0, 0, 200], [50, 200, 50, 200], player.hp / player.animal.maxHP);
+    Renderer.renderTexture("empty", 1, screenh - 1, "bl", 50, 10, 0, 1, [255, 255, 255, 100]);
+    let x1 = 2;
+    let x2 = 49;
+    Renderer.renderRectangle(x1, screenh - 10, Math.round(x1 + (x2 - x1) * player.hp / player.animal.maxHP), screenh - 3, 0, hpColor);
     Renderer.renderTexture("uicrosshair", screenw / 2, screenh / 2, "cc", textures.uicrosshair.width,  textures.uicrosshair.height, 0);
     
     if (highlighted) {

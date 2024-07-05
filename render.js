@@ -95,7 +95,10 @@ let Renderer = {
       let wall = world.walls[i];
       if (wall == undefined) continue;
 
-      let tex = textures[world.textures[wall.texture]];
+      let tex = wall.texture;
+      let tileH = wall.tileH ? wall.length : 1;
+      let tileV = wall.tileV ? segment.top - segment.bottom : 1;
+
       let segment = world.segments[world.getWallSegment(wall, player.pos)];
       if (!segment) continue;
 
@@ -104,10 +107,29 @@ let Renderer = {
 
       if (wall.divider) {
         let segment2 = world.segments[world.getWallSegment(wall, player.pos, true)];
-        if (segment.bottom < segment2.bottom) {
-          print(123);
+
+        let diffBottom = segment2.bottom - segment.bottom;
+        if (diffBottom > 0) {
+          top = segment2.bottom;
+          bottom = segment.bottom;
+
+          tex = segment2.bottomWallTexture;
+          tileH = segment2.bottomWallTextureTileH ? wall.length : 1;
+          tileV = segment2.bottomWallTextureTileV ? diffBottom : 1;
         }
+        let diffTop = segment.bottom - segment2.bottom;
+        if (diffTop > 0) {
+          top = segment.top;
+          bottom = segment2.top;
+
+          tex = segment2.topWallTexture;
+          tileH = segment2.topWallTextureTileH ? wall.length : 1;
+          tileV = segment2.topWallTextureTileV ? diffTop : 1;
+        }
+
       }
+
+      tex = textures[world.textures[tex]];
 
       let l = {};
       let r = {};
@@ -185,13 +207,15 @@ let Renderer = {
           let c = [0, 0, 0, 0];
           
           if (deltaCenter < (0.5 - bottom) * size && deltaCenter > (0.5 - top) * size && d > 0 && !isNaN(uv.u)) {
-            let index = (Math.floor(uv.u * (wall.tileH ? wall.length : 1) * tex.width) + Math.floor(uv.v * (wall.tileV ? wall.length : 1) * tex.height) * tex.width) * 4;
+            let index = (Math.floor(uv.u * tileH * tex.width) + Math.floor(uv.v * tileV * tex.height) * tex.width) * 4;
             c[0] = tex.pixels[index  ] / fog;
             c[1] = tex.pixels[index+1] / fog;
             c[2] = tex.pixels[index+2] / fog;
             c[3] = tex.pixels[index+3];
 
             //c = [uv.u * 255, uv.v * 255, 0, 255];
+            //c = [world.getWallSegment(wall, player.pos) * 100, 0, 0, 255];
+            //c = [uv.u * tileH * 255, uv.v * tileV * 255, 0, 255];
           }
 
           col.push([c[0], c[1], c[2], c[3]]);
@@ -203,7 +227,7 @@ let Renderer = {
 
 
    
-    for (let segmentIndex in world.segments) {
+    for (let segmentIndex = 0; segmentIndex < world.segments.length; segmentIndex++) {
       let segment = world.segments[segmentIndex];
       if (segment == undefined || segment.walls.length == 0) continue;
 
@@ -302,8 +326,9 @@ let Renderer = {
 
     for (let i = 1; i < Game.world.entities.length; i++) {
       let entity = Game.world.entities[i];
-      if (entity.owner) continue;
-      let tex = textures[world.textures[entity.animal.texture]];
+      if (entity.owner || entity.hp < 0) continue;
+
+      let tex = textures[entity.animal.texture];
       let relativePos = rotateVector({x: entity.pos.x - player.pos.x, y: entity.pos.y - player.pos.y}, -player.dir.x + Math.PI / 2);
       
       let d = relativePos.y;
@@ -443,6 +468,17 @@ let Renderer = {
     }
   },
 
+  renderPlus(X, Y, d = 0, c = [255, 255, 255, 255]) {
+    for (let x = X - 1; x <= X + 1; x++) {
+      let col = [];
+      for (let y = 0; y < screenh; y++) {
+        if ((x - X == 0 && Math.abs(y - Y) < 2) || y - Y == 0) col.push(c);
+        else col.push([0, 0, 0, 0]);
+      }
+      Renderer.buffer.push({x: x, d: d, col: col});
+    }
+  },
+
   displayRender() {
     for (let i = 0; i < Renderer.img.pixels.length; i++) {
       Renderer.img.pixels[i] = ((i + 1) % 4 == 0) ? 255 : 0;
@@ -451,13 +487,12 @@ let Renderer = {
     Renderer.buffer.sort((a, b) => {
       return b.d - a.d;
     });
-    
+
     for (let item of Renderer.buffer) {
       for (let y in item.col) {
         let opacity = item.col[y][3] / 255;
-
         if (opacity == 0 || item.x < 0 || item.x >= screenw || item.y < 0 || item.y >= screenh) continue;
-        
+
         let k = (item.x != undefined?(item.x + y * screenw):(y * 1 + item.y * screenw)) * 4;
         Renderer.img.pixels[k] = item.col[y][0] * opacity + Renderer.img.pixels[k++] * (1 - opacity);
         Renderer.img.pixels[k] = item.col[y][1] * opacity + Renderer.img.pixels[k++] * (1 - opacity);
@@ -468,7 +503,11 @@ let Renderer = {
     Renderer.img.updatePixels();
     noSmooth();
     image(Renderer.img, 0, 0, width, height);
-  }
+  },
+
+  mix(c1, c2, i) {
+    return [c1[0] + (c2[0] - c1[0]) * i, c1[1] + (c2[1] - c1[1]) * i, c1[2] + (c2[2] - c1[2]) * i, c1[3] + (c2[3] - c1[3]) * i];
+  },
 };
 
 //https://gist.github.com/yomotsu/165ba9ee0dc991cb6db5

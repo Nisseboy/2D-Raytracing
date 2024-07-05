@@ -75,9 +75,11 @@ function setup() {
 
   setScene(MainMenu);
 
-  //Game.world = new World(levels["chapter 1"]["level 1"]);
+  //Game.world = new World(chapters[1].levels[2].data);
   //setScene(Game);
 
+  //Editor.chapterName = "ass chapter";
+  //Editor.level = chapters[1].levels[2];
   //setScene(Editor);
   
   frameRate(fps);
@@ -152,6 +154,10 @@ function draw() {
   menuButtons = [];
   hoveredButton = undefined;
 
+  for (let i of animations) {
+    textures[i.name] = textures[i.paths[Math.floor((frameCount / i.time / fps) % 1 * i.paths.length)]];
+  }
+
   if (scene.update) scene.update();
 
   for (let i = 0; i < menuButtons.length; i++) {
@@ -180,7 +186,7 @@ function draw() {
   }
   
   if (debug) Renderer.renderText(Math.round(frameRate()), 0, 0);
-  
+
   Renderer.displayRender();
 }
 

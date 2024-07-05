@@ -75,7 +75,6 @@ let Editor = {
     Editor.inEditor = true;
 
     mouseWorld = toWorld(mousePos);
-    Editor.selected.length = 0;
   },
   
   update() {
@@ -169,6 +168,21 @@ let Editor = {
       Renderer.renderCross(pt.x, pt.y, 6, Editor.getHighlightColor(vertex, [255, 0, 0, 255]));
     }
     
+    if (Editor.selectedSegment == undefined)
+    for (let i = 0; i < world.entities.length; i++) {
+      let entity = world.entities[i];
+      let animal = animals[entity.animalType];
+      if (entity == undefined) continue;
+
+      let pt = toScreen(entity.pos);
+
+      if (!Editor.hovered && Math.abs(mousePos.x - pt.x) < 2 && Math.abs(mousePos.y - pt.y) < 2) {
+        Editor.hovered = entity;
+      }
+
+      Renderer.renderPlus(pt.x, pt.y, 6, Editor.getHighlightColor(entity, animal.type == "player" ? [0, 0, 255, 255] : [255, 0, 0, 255]));
+    }
+    
     for (let i = 0; i < world.walls.length; i++) {
       let wall = world.walls[i];
 
@@ -190,7 +204,7 @@ let Editor = {
       for (let i = 0; i < pts.length; i++) {
         let pt = pts[i];
   
-        Renderer.renderPoint(pt.x, pt.y, 8, Editor.getHighlightColor(wall));
+        Renderer.renderPoint(pt.x, pt.y, 8, Editor.getHighlightColor(wall, wall.divider ? [120, 120, 120, 255] : undefined));
       }
     }
 
@@ -282,14 +296,20 @@ let Editor = {
     
     if (mouseButton == LEFT) {
       if (hovered) {
-        if (shift && hovered.x != undefined) {
+        if (shift) {
 
-          //Shift dragging on a vertex creates a new wall
-          Editor.walling = true;
-          Editor.tempVertex = {x: mouseWorld.x, y: mouseWorld.y, offset: {x: 0, y: 0}};
-
-          world.vertices.push(Editor.tempVertex);
-          world.walls.push({a: world.vertices.indexOf(hovered), b: world.vertices.indexOf(Editor.tempVertex), texture: 2});
+          if (hovered.x != undefined) {
+            //Shift dragging on a vertex creates a new wall
+            Editor.walling = true;
+            Editor.tempVertex = {x: mouseWorld.x, y: mouseWorld.y, offset: {x: 0, y: 0}};
+  
+            world.vertices.push(Editor.tempVertex);
+            world.walls.push({a: world.vertices.indexOf(hovered), b: world.vertices.indexOf(Editor.tempVertex), texture: 2});
+          } else if (hovered.walls != undefined) {
+            
+            //Shift clicking on a segment creates a new entity
+            world.entities.push({animalType: "rat", pos: mouseWorld});
+          }
 
         } else {
 
@@ -311,7 +331,9 @@ let Editor = {
 
         if (shift) {
           //Shift click creates a new vertex
-          world.vertices.push({x: mouseWorld.x, y: mouseWorld.y});
+          let vertex = {x: mouseWorld.x, y: mouseWorld.y};
+          world.vertices.push(vertex);
+          Editor.snap(vertex, true);
         }
       }
     }
@@ -362,7 +384,7 @@ let Editor = {
   },
   snap(object, connect = false) {
     let pos = object.pos || {x: object.x, y: object.y};
-    if (pos.x == undefined) return {};
+    if (pos.x == undefined || object.pos) return {};
 
     let world = Editor.world;
     for (let i = 0; i < world.vertices.length; i++) {
@@ -589,7 +611,7 @@ let Editor = {
     if (types[tab].length == 0) return;
 
     let x = screenw - Editor.panelWidth - 1;
-    let y = Editor.panels.segments.scroll + 1;
+    let y = Editor.panels.properties.scroll + 1;
 
     Renderer.renderRectangle(x, 0, screenw, screenh, 2, [20, 20, 20, 255]);
     x++;
@@ -626,6 +648,31 @@ let Editor = {
         {name: "tileV", type: "bool", property: "tileV"},
       ];
     }
+    if (tab == 1) {
+      //Segments 
+      settings = [
+        {name: "flor", property: "bottom", type: "range", step: 0.25},
+        {name: "ceil", property: "top", type: "range", step: 0.25},
+
+        {name: "flortex", type: "texture", property: "floorTexture"},
+        {name: "ceiltex", type: "texture", property: "ceilingTexture"},
+
+        {name: "toptex", type: "texture", property: "topWallTexture"},
+        {name: "toptextileh", type: "bool", property: "topWallTextureTileH"},
+        {name: "toptextilev", type: "bool", property: "topWallTextureTileV"},
+
+        {name: "bottex", type: "texture", property: "bottomWallTexture"},
+        {name: "bottextileh", type: "bool", property: "bottomWallTextureTileH"},
+        {name: "bottextilev", type: "bool", property: "bottomWallTextureTileV"},
+      ];
+    }
+    if (tab == 2) {
+      //Entities 
+      settings = [
+        {name: "type", type: "animalType", property: "animalType"},
+        //{name: "hp", type: "range", property: "hp", step: 10}
+      ];
+    }
 
     for (let i = 0; i < settings.length; i++) {
       let setting = settings[i];
@@ -640,9 +687,10 @@ let Editor = {
         }
       }
 
+      Renderer.renderText(setting.name, x, y);
+
       switch (setting.type) {
         case "bool":
-          Renderer.renderText(setting.name, x, y);
           buttons.push({
             text: value ? "§" : (value == undefined ? "*" : "."),
             x: screenw - 1,
@@ -655,7 +703,6 @@ let Editor = {
           y += 10;
           break;
         case "texture":
-          Renderer.renderText(setting.name, x, y);
           buttons.push({
             renderer: "texture",
             texture: world.textures[value] || "empty",
@@ -669,8 +716,54 @@ let Editor = {
     
           y += 17;
           break;
+        case "animalType":
+          buttons.push({
+            renderer: "texture",
+            texture: animals[value].texture || "empty",
+            x: screenw - 1 - 16,
+            y: y,
+            w: 16,
+            h: 16,
+
+            callback: () => {AnimalPicker.toChange = {objects: obs, property: setting.property}; setScene(AnimalPicker)}
+          });
+    
+          y += 17;
+          break;
+        case "range":
+          let str = value?.toString();
+
+          const changeValue = (d) => {
+            for (let j of obs) {
+              j[setting.property] += d;
+            }
+          }
+
+          buttons.push({
+            text: "<",
+            x: screenw - 1 - 7 - 3 - Math.max((str || "0").length, 5) * 4,
+            y: y,
+            align: "tr",
+
+            callback: () => {changeValue(-setting.step)},
+          });
+          Renderer.renderText(str != undefined ? str : "*", screenw - 1 - 8, y + 3, "tr");
+          buttons.push({
+            text: ">",
+            x: screenw - 1,
+            y: y,
+            align: "tr",
+
+            callback: () => {changeValue(setting.step)},
+          });
+    
+          y += 10;
+          break;
       }
     }
+
+    let realY = y - Editor.panels.properties.scroll;
+    Editor.panels.properties.height = () => {return realY};
   },
 
   renderSavePanel() {
