@@ -1,3 +1,15 @@
+/*
+
+All the characters rendered on screen are turned lowercase automatically
+they are defined like this but in one line instead (this is a one):
+0 1 0
+1 1 0
+0 1 0
+0 1 0
+1 1 1
+
+*/
+
 let font = {
   "a": "010101111101101",
   "b": "110101110101110",

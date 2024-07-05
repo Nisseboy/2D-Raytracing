@@ -89,7 +89,7 @@ let Editor = {
       menuButtons.push({
         text: "help",
 
-        callback: e => {window.open("https://github.com/Nisseboy/2D-Raytracing/blob/master/docs/editor.md")},
+        callback: e => {window.open("https://github.com/Nisseboy/Crack-Engine/blob/master/docs/editor.md")},
       });
       menuButtons.push({
         text: "file",

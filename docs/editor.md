@@ -26,3 +26,7 @@ There are a few buttons on the left side:
 Sometimes problems can arise, a few common ones:
 * Walls are not visible in the 3d view, this is either because the walls are simply dividers for segments or the segment for the room is defined counter clockwise instead of clockwise
 * I made a mistake and want to undo it, you can't, get better
+
+
+## Advanced
+If you want to make a more advanced level pack or even an entire game, you need to fork the github repository of this engine, then you can edit the source code and all the assets. To hard code levels or add textures you would do that in the assets folder, it's pretty self explanatory
