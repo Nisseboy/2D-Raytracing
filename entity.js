@@ -61,6 +61,9 @@ class Entity {
 
     this.hp -= hp;
 
+    hurtTime = maxHurtTime;
+    hurtStrength = hp / 20;
+
     if (this.hp <= 0) {
       this.kill();
     }

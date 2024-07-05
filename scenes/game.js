@@ -10,6 +10,10 @@ let slotSize = 12;
 let fov = Math.PI / 2;
 let player;
 
+let maxHurtTime = 20;
+let hurtTime = 0;
+let hurtStrength;
+
 let Game = {
   init() {
 
@@ -96,6 +100,21 @@ let Game = {
     
     if (held) {
       Renderer.renderText(held.animal.name, screenw - 1, screenh - (slotSize + 2), "br");
+    }
+
+    if (hurtTime > 0) {
+      hurtTime -= 1;
+      let intensity = hurtTime / maxHurtTime * hurtStrength;
+
+      for (let x = 0; x < screenw; x++) {
+        let col = [];
+        for (let y = 0; y < screenh; y++) {
+          let sqd = (x - screenw / 2) ** 2 + (y - screenh / 2) ** 2;
+
+          col.push([255, 0, 0, sqd / 50 * intensity]);
+        }
+        Renderer.buffer.push({col: col, x: x, d: 0});
+      }
     }
   },
   stop() {
