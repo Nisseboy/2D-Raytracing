@@ -48,7 +48,6 @@ let Renderer = {
       let col = [];
       for (let y = 0; y < screenh; y++) {
         if (y < Y || y >= Y + h) {
-          col.push([0, 0, 0, 0]);
           continue;
         }
 
@@ -67,7 +66,7 @@ let Renderer = {
         col.push(clr);
       }
       //Renderer.buffer.push({x: x, d: d, col: col});
-      Renderer.bufferPush(x, d, col);
+      Renderer.bufferPush(x, d, col, Y);
     }
   },
 
@@ -360,9 +359,9 @@ let Renderer = {
       if (size < 0) continue;
       let wallSize = focusPlane / d * 0.01;
       
-      let X = Math.floor(-relativePos.x * focusPlane / d + screenw / 2 - screenw * size / 2);
+      let X = Math.floor(-relativePos.x * focusPlane / d + screenw / 2 - screenh * size / 2);
       let Y = Math.floor((-yShearReal - (entity.pos.z + Math.sin(entity.bob) * entity.animal.bobStrength) * focusPlane / d + (wallSize / 2) * screenh) + screenh / 2 - screenh * size);
-      let w = Math.floor(screenw * size);
+      let w = Math.floor(screenh * size);
       let h = Math.floor(screenh * size);
       
       Renderer.renderTexture(entity.animal.texture, X, Y, "tl", w, h, d, (entity == highlighted) * 2)
@@ -387,7 +386,6 @@ let Renderer = {
       let col = [];
       for (let y = 0; y < screenh; y++) {
         if (y < Y || y >= Y + h) {
-          col.push([0, 0, 0, 0]);
           continue;
         }
         let index = (Math.floor((x - X) / w * tex.width) + Math.floor((y - Y) / h * tex.height) * tex.width) * 4;
@@ -407,7 +405,7 @@ let Renderer = {
         col.push(c);
       }
       //Renderer.buffer.push({x: x, d: d, col: col});
-      Renderer.bufferPush(x, d, col);
+      Renderer.bufferPush(x, d, col, Y);
     }
   },
 
@@ -469,10 +467,9 @@ let Renderer = {
       let col = [];
       for (let y = 0; y < screenh; y++) {
         if (y >= y1 && y <= y2) col.push(c);
-        else col.push([0, 0, 0, 0]);
       }
       //Renderer.buffer.push({x: x, d: d, col: col});
-      Renderer.bufferPush(x, d, col);
+      Renderer.bufferPush(x, d, col, y1);
     }
   },
 
@@ -481,27 +478,19 @@ let Renderer = {
   },
 
   renderCross(X, Y, d = 0, c = [255, 255, 255, 255]) {
-    for (let x = X - 1; x <= X + 1; x++) {
-      let col = [];
-      for (let y = 0; y < screenh; y++) {
-        if (y >= Y - 1 && y <= Y + 1 && Math.abs(x - X) == Math.abs(y - Y)) col.push(c);
-        else col.push([0, 0, 0, 0]);
-      }
-      //Renderer.buffer.push({x: x, d: d, col: col});
-      Renderer.bufferPush(x, d, col);
-    }
+    Renderer.renderPoint(X-1, Y-1, d, c);
+    Renderer.renderPoint(X-1, Y+1, d, c);
+    Renderer.renderPoint(X, Y, d, c);
+    Renderer.renderPoint(X+1, Y-1, d, c);
+    Renderer.renderPoint(X+1, Y+1, d, c);
   },
 
   renderPlus(X, Y, d = 0, c = [255, 255, 255, 255]) {
-    for (let x = X - 1; x <= X + 1; x++) {
-      let col = [];
-      for (let y = 0; y < screenh; y++) {
-        if ((x - X == 0 && Math.abs(y - Y) < 2) || y - Y == 0) col.push(c);
-        else col.push([0, 0, 0, 0]);
-      }
-      //Renderer.buffer.push({x: x, d: d, col: col});
-      Renderer.bufferPush(x, d, col);
-    }
+    Renderer.renderPoint(X-1, Y, d, c);
+    Renderer.renderPoint(X+1, Y, d, c);
+    Renderer.renderPoint(X, Y, d, c);
+    Renderer.renderPoint(X, Y-1, d, c);
+    Renderer.renderPoint(X, Y+1, d, c);
   },
 
   bufferPush(X, d, col, yStart = 0, row = false, ) {
