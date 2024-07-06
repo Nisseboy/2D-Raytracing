@@ -35,6 +35,7 @@ let EditorLevelCreator = {
         }
   
         LevelPicker.scene = EditorLevelCreator;
+        LevelPicker.forEditor = true;
         setScene(LevelPicker);
       },
     });

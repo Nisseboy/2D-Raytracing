@@ -13,6 +13,13 @@ let ChapterPicker = {
       buttons.push({text: chapter.name, x: 1, y: y, callback: e => {
         ChapterPicker.chooseChapter(chapter.name);
       }});
+
+      buttons.push({text: "x", x: 8 + chapter.name.length * 4, y: y, callback: e => {
+        confirmPopup = {
+          text: "delete the chapter and all its levels?",
+          callback: () => {deleteChapter(chapter)}
+        };
+      }});
       
       y += 10;
     }

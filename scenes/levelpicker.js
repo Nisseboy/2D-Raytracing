@@ -2,23 +2,36 @@ let LevelPicker = {
   callback: () => {},
   scene: undefined,
   openChapter: undefined,
+  forEditor: undefined,
 
   start() {
     LevelPicker.openChapter = undefined;
   },
 
   update() {
+    let y = 10;
     for (let i in chapters) {
       let chapter = chapters[i];
 
-      menuButtons.push({text: chapter.name, callback: e => {LevelPicker.openChapter = i}});
+      buttons.push({text: chapter.name, x: 1, y: y, callback: e => {LevelPicker.openChapter = i}});
+      y += 10;
       if (i == LevelPicker.openChapter) {
         for (let j in chapter.levels) {
           let level = chapter.levels[j];
 
-          menuButtons.push({text: level.name, dpos: {x: 4, y: 0}, callback: e => {
+          buttons.push({text: level.name, x: 5, y: y, callback: e => {
             LevelPicker.callback(level);
           }});
+
+          if (LevelPicker.forEditor && editorChapters.includes(chapter))
+            buttons.push({text: "x", x: 12 + level.name.length * 4, y: y, callback: e => {
+              confirmPopup = {
+                text: "delete level?",
+                callback: () => {deleteLevel(chapter, level)}
+              };
+            }});
+
+          y += 10;
         }
       }
     }

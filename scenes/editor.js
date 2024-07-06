@@ -812,8 +812,9 @@ let Editor = {
       {text: "new", type: "header"},
 
       {text: "new level", callback: () => {
-        EditorLevelCreator.scene = Editor;
-        setScene(EditorLevelCreator);
+        Editor.chapterName = undefined;
+        Editor.level = undefined;
+        setScene(ChapterPicker);
       }},
     ]
 

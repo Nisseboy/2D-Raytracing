@@ -19,6 +19,7 @@ let editorChapters = [];
 
 let buttons = [];
 let menuButtons = [];
+let confirmPopup = undefined;
 let hoveredButton;
 
 let buttonRenderers = {
@@ -160,6 +161,35 @@ function draw() {
 
   if (scene.update) scene.update();
 
+  if (confirmPopup) {
+    let p = confirmPopup;
+    let text = p.text;
+    let w = text.length * 4 - 1;
+
+    Renderer.renderTexture("metal/ceiling1", screenw / 2, screenh / 2, "cc", w + 4, 5 + 13 + 4, -1, 1);
+    Renderer.renderText(text, screenw / 2, screenh / 2 - 1, "bc", -1);
+    buttons.push({
+      renderer: "text",
+      text: "yes",
+      x: screenw / 2 - 1,
+      y: screenh / 2,
+      align: "tr",
+      d: -1,
+
+      callback: e => {p.callback(e); confirmPopup = undefined},
+    });
+    buttons.push({
+      renderer: "text",
+      text: "no",
+      x: screenw / 2 + 1,
+      y: screenh / 2,
+      align: "tl",
+      d: -1,
+
+      callback: e => {confirmPopup = undefined},
+    });
+  }
+
   for (let i = 0; i < menuButtons.length; i++) {
     let button = menuButtons[i];
 
@@ -199,6 +229,24 @@ function rotateVector(v, angle) {
 
 function inBounds(p, bounds) {
   return (p.x > bounds.x && p.y > bounds.y && p.x < bounds.x + bounds.w && p.y < bounds.y + bounds.h);
+}
+
+function deleteChapter(chapter) {
+  let index = chapters.indexOf(chapter);
+  let index2 = editorChapters.indexOf(chapter);
+
+  chapters.splice(index, 1);
+  editorChapters.splice(index2, 1);
+
+  if (Editor.chapter == chapter) Editor.chapterName = undefined;
+
+  localStorage.setItem("editorChapters", JSON.stringify(editorChapters));
+}
+
+function deleteLevel(chapter, level) {
+  chapter.levels.splice(chapter.levels.indexOf(level), 1);
+
+  localStorage.setItem("editorChapters", JSON.stringify(editorChapters));
 }
 
 window.oncontextmenu = (e) => {
