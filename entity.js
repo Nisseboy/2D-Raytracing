@@ -30,7 +30,7 @@ class Entity {
       this.pos.z = this.segment.bottom;
       this.vel.x *= 0.7;
       this.vel.y *= 0.7;
-      if (this.vel.z < -1) { if (this.animal.type == "critter" || this.animal.type == "grenade") this.vel.z *= -0.4; }
+      if (this.vel.z < -1) { this.vel.z *= -this.animal.bounce; }
       else this.vel.z = 0;
     } else {
       this.vel.z -= 0.1;
@@ -62,15 +62,18 @@ class Entity {
     this.hp -= hp;
 
     hurtTime = maxHurtTime;
-    hurtStrength = hp / 20;
+    hurtStrength = hp / 25;
 
     if (this.hp <= 0) {
       this.kill();
     }
+    if (this.hp > this.animal.maxHP) {
+      this.hp = this.animal.maxHP;
+    }
   }
 
   kill() {
-    if (this.animalType == "player") setScene(DeathScreen);
+    if (this.animalType == "player") Game.toLose = true;
   }
   
   pickUp(entity) {

@@ -1,11 +1,6 @@
 let DeathScreen = {
   start() {
-    lastGameFrame = Renderer.buffer;
-    for (let i = 0; i < lastGameFrame.length; i+=4) {
-      lastGameFrame[i] *= 0.4;
-      lastGameFrame[i+1] *= 0.4;
-      lastGameFrame[i+2] *= 0.4;
-    }
+    PauseScreen.start();
   },
 
   keyPressed() {

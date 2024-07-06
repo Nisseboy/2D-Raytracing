@@ -20,7 +20,7 @@ let LevelPicker = {
           let level = chapter.levels[j];
 
           buttons.push({text: level.name, x: 5, y: y, callback: e => {
-            LevelPicker.callback(level);
+            LevelPicker.callback(level, chapter);
           }});
 
           if (LevelPicker.forEditor && editorChapters.includes(chapter))

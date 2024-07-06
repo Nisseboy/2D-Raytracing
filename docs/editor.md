@@ -12,6 +12,7 @@ Entity type "types", all entities has a type like rat or player or medkit but ev
 * Critter: Critters can be picked up and thrown and will run around erratically when on the ground
 * Pickup: Like an item but it's automatically picked upa nd used, if you walk over a medkit you will heal automatically
 * Event: These trigger something when stepped on, like a sound or completing the level
+* Interactable: They trigger something when pressed, like a door opening
 
 
 You select objects by clicking on them, you can also ctrl+click to select multiple objects, if you drag a selected object all other selected objects will move. Once you have selected at least one object a properties window will appear, A star on any value means that the objects you have selected have different values but they will become the same once you change it:

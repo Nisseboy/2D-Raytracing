@@ -15,6 +15,9 @@ let hurtTime = 0;
 let hurtStrength;
 
 let Game = {
+  toWin: false,
+  toLose: false,
+
   init() {
 
   },
@@ -32,7 +35,13 @@ let Game = {
     if (getKeyPressed("Throw Out")) player.throwOut(player.slot);
     if (getKeyPressed("Jump")) player.jump();
     
-    if (getKeyPressed("Interact") && highlighted) player.pickUp(highlighted);
+    if (getKeyPressed("Interact") && highlighted) {
+      if (highlighted.animal.type == "interactable") {
+        highlighted.animal.onPickUp(player, highlighted);
+      } else {
+        player.pickUp(highlighted);
+      }
+    }
 
     if (keyCode == getKey("Pause")) setScene(PauseScreen);
   },
@@ -67,9 +76,14 @@ let Game = {
         let diff = {x: entity.pos.x - player.pos.x, y: entity.pos.y - player.pos.y}
         let sqd = diff.x * diff.x + diff.y * diff.y;
         let angle = Math.atan2(diff.y, diff.x) - player.dir.x;
-        if ((entity.animal.type == "critter" || entity.animal.type == "grenade") && angle < reachAngle && sqd < reach * reach && angle < closestAngle) {
+        if ((entity.animal.canPickUp && entity.animal.canPickUp(player)) && angle < reachAngle && sqd < reach * reach && angle < closestAngle) {
           closestAngle = angle;
           highlighted = entity;
+        }
+
+        if (entity.animal.onTouch && sqd < reach ** 2) {
+          entity.animal.onTouch(player, entity);
+          Game.world.entities[i] = undefined;
         }
       }
     }
@@ -86,21 +100,21 @@ let Game = {
     let held = player.slots[player.slot];
     if (held) {
       Renderer.renderTexture(held.animal.texture, (screenw - 20) / 2, screenh - 40, "tl", 20, 40, 0.1);
+      Renderer.renderText(held.animal.name, screenw - 1, screenh - (slotSize + 2), "br");
     }
-
+    
     let hpColor = Renderer.mix([255, 0, 0, 200], [50, 200, 50, 200], player.hp / player.animal.maxHP);
     Renderer.renderTexture("empty", 1, screenh - 1, "bl", 50, 10, 0, 1, [255, 255, 255, 100]);
     let x1 = 2;
     let x2 = 49;
     Renderer.renderRectangle(x1, screenh - 10, Math.round(x1 + (x2 - x1) * player.hp / player.animal.maxHP), screenh - 3, 0, hpColor);
+
     Renderer.renderTexture("uicrosshair", screenw / 2, screenh / 2, "cc", textures.uicrosshair.width,  textures.uicrosshair.height, 0);
     
     if (highlighted) {
-      Renderer.renderText(`press [${getControlName("Interact")}] to pick up ${highlighted.animal.name}`, screenw / 2, screenh / 2, "bc");
-    }
-    
-    if (held) {
-      Renderer.renderText(held.animal.name, screenw - 1, screenh - (slotSize + 2), "br");
+      let textt = `press [${getControlName("Interact")}] to pick up ${highlighted.animal.name}`;
+      if (highlighted.animal.type == "interactable") textt = `press [${getControlName("Interact")}] to interact`;
+      Renderer.renderText(textt, screenw / 2, screenh / 2, "bc");
     }
 
     if (hurtTime > 0) {
@@ -112,13 +126,27 @@ let Game = {
         for (let y = 0; y < screenh; y++) {
           let sqd = (x - screenw / 2) ** 2 + (y - screenh / 2) ** 2;
 
-          col.push([255, 0, 0, sqd / 50 * intensity]);
+          col.push([intensity > 0 ? 255 : 0, intensity > 0 ? 0 : 255, 0, Math.random() < sqd / 40000 * Math.abs(intensity) ? 255 : 0]);
         }
         //Renderer.buffer.push({col: col, x: x, d: 0});
         Renderer.bufferPush(x, 0, col);
       }
     }
+
+    if (Game.toWin) {
+      setScene(WinScreen);
+      Game.toWin = false;
+    }
+    if (Game.toLose) {
+      setScene(DeathScreen);
+      Game.toLose = false;
+    }
   },
+
+  finish() {
+    Game.toWin = true;
+  },
+
   stop() {
     exitPointerLock();
   }

@@ -7,6 +7,8 @@ let AnimalPicker = {
 
     let cats = {
       player: [],
+      event: [],
+      interactable: [],
       pickup: [],
       item: [],
       critter: [],

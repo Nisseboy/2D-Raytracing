@@ -78,7 +78,9 @@ function setup() {
 
   setScene(MainMenu);
 
-  //Game.world = new World(chapters[0].levels[1].data);
+  //Game.chapter = chapters[0];
+  //Game.level = Game.chapter.levels[0];
+  //Game.world = new World(Game.level.data);
   //setScene(Game);
 
   //Editor.chapterName = "ass chapter";

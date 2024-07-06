@@ -27,8 +27,8 @@ let Editor = {
     properties: {scroll: 0, tab: 0},
     save: {scroll: 0},
   },
-  
-  selectedSegment: undefined,
+
+  wallSelector: undefined,
 
   panelWidth: 60,
 
@@ -84,7 +84,7 @@ let Editor = {
     if (Editor.panel == undefined && Editor.selected.length != 0) Editor.panel = "properties";
     if (Editor.panel == "properties" && Editor.selected.length == 0) Editor.panel = undefined;
 
-    if (Editor.selectedSegment == undefined) {
+    if (!Editor.wallSelector) {
       menuButtons.push({
         text: "help",
 
@@ -131,21 +131,7 @@ let Editor = {
         y: screenh - 1,
         align: "bc",
 
-        callback: () => {
-          let selected = Editor.selected;
-          let selectedSegment = Editor.selectedSegment;
-
-          selectedSegment.walls = [];
-
-          for (let i = 0; i < selected.length; i++) {
-            selectedSegment.walls.push(world.walls.indexOf(selected[i]));
-          }
-          world.precalc();
-
-          Editor.panel = "segments";
-          Editor.selectedSegment = undefined;
-          selected.length = 0;
-        }
+        callback: () => {Editor.wallSelector.callback(Editor.selected); Editor.wallSelector = undefined},
       });
     }
 
@@ -154,7 +140,7 @@ let Editor = {
     Editor.pos.x += movement.x;
     Editor.pos.y += movement.y;
 
-    if (Editor.selectedSegment == undefined)
+    if (Editor.wallSelector == undefined)
     for (let i = 0; i < world.vertices.length; i++) {
       let vertex = world.vertices[i];
       if (vertex == undefined) continue;
@@ -168,7 +154,7 @@ let Editor = {
       Renderer.renderCross(pt.x, pt.y, 6, Editor.getHighlightColor(vertex, [255, 0, 0, 255]));
     }
     
-    if (Editor.selectedSegment == undefined)
+    if (Editor.wallSelector == undefined)
     for (let i = 0; i < world.entities.length; i++) {
       let entity = world.entities[i];
       if (entity == undefined) continue;
@@ -235,8 +221,9 @@ let Editor = {
           let done = x / screenw;
           let lastInside = inside;
 
-          for (let i of intersections) {
-            if (lastDone < i.d * 200 && done > i.d * 200) inside = !inside;
+          for (let i = 0; i < intersections.length; i++) {
+            let int = intersections[i];
+            if (lastDone < int.d * 200 && done > int.d * 200) inside = !inside;
           }
           lastDone = done;
 
@@ -297,9 +284,14 @@ let Editor = {
     let selected = Editor.selected;
     let world = Editor.world;
 
-    if (Editor.selectedSegment) {
+    if (Editor.wallSelector) {
       if (hovered && hovered.a != undefined && !selected.includes(hovered)) {
         selected.push(hovered);
+        
+        if (selected.length == Editor.wallSelector.max) {
+          Editor.wallSelector.callback(selected);
+          Editor.wallSelector = undefined;
+        }
       }
       return;
     }
@@ -414,11 +406,15 @@ let Editor = {
             let index = world.vertices.indexOf(object);
             world.vertices[index] = undefined;
 
-            for (let wall of world.walls) {
+            for (let j = 0; j < world.walls.length; j++) {
+              let wall = world.walls[j];
               if (wall == undefined) continue;
+
+              print(wall, index);
 
               if (wall.a == index) wall.a = i;
               if (wall.b == index) wall.b = i;
+
             }
           }
 
@@ -518,13 +514,12 @@ let Editor = {
   },
 
   backButton() {
-    if (Editor.panel) {
-      Editor.panel = undefined;
+    if (Editor.wallSelector != undefined) {
+      Editor.wallSelector = undefined;
       return;
     }
-    if (Editor.selectedSegment != undefined) {
-      Editor.selectedSegment = undefined;
-      Editor.panel = "segments";
+    if (Editor.panel) {
+      Editor.panel = undefined;
       return;
     }
 
@@ -575,9 +570,21 @@ let Editor = {
         align: "tl",
 
         callback: () => {
-          Editor.selectedSegment = segment;
           Editor.selected.length = 0;
-          Editor.segmentPanelOpen = false;
+          Editor.wallSelector = {
+            max: "1024",
+            callback: (walls) => {
+    
+              segment.walls = [];
+    
+              for (let i = 0; i < walls.length; i++) {
+                segment.walls.push(world.walls.indexOf(walls[i]));
+              }
+              world.precalc();
+
+              Editor.selected.length = 0;
+            }
+          };
         }
       };
       buttons.push(button);
@@ -691,6 +698,10 @@ let Editor = {
         {name: "type", type: "animalType", property: "animalType"},
         //{name: "hp", type: "range", property: "hp", step: 10}
       ];
+
+      if (obs.findIndex(e => {return e.animalType == "buttondoor"}) != -1) {
+        settings.push({name: "door", type: "wallSelector", property: "door"});
+      }
     }
 
     for (let i = 0; i < settings.length; i++) {
@@ -777,6 +788,32 @@ let Editor = {
           });
     
           y += 10;
+          break;
+
+        case "wallSelector":
+          buttons.push({
+            renderer: "texture",
+            texture: "empty",
+            x: screenw - 1 - 16,
+            y: y,
+            w: 16,
+            h: 16,
+
+            callback: () => {
+              Editor.tempSelected = Editor.selected;
+              Editor.selected = [];
+              Editor.wallSelector = {
+                max: 1,
+                callback: (walls) => {
+                  setValue(Editor.world.walls.indexOf(walls[0]))
+        
+                  Editor.selected = Editor.tempSelected;
+                }
+              };
+            }
+          });
+    
+          y += 17;
           break;
       }
     }

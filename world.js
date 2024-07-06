@@ -16,6 +16,7 @@ class World {
         if (e.dir) this.entities[i].dir = e.dir;
         if (e.vel) this.entities[i].vel = e.vel;
         if (e.slots) this.entities[i].slots = e.slots;
+        if (e.door) this.entities[i].door = e.door;
       }
     } else {
       this.textures = ["metal/floor1", "metal/ceiling1", "metal/wall1", "rat"];
@@ -185,6 +186,7 @@ class World {
       e.dir = en.dir;
       e.vel = en.vel;
       e.slots = en.slots;
+      e.door = en.door;
     }
 
     data.vertices = [];

@@ -34,6 +34,10 @@ let folders = [
   "entities/rat", "1",
   "entities/player", "1",
   
+  "events", "flag",
+
+  "interactable/button", "door",
+
   "items", "medkit",
 ];
 

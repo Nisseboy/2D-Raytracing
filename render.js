@@ -113,6 +113,8 @@ let Renderer = {
           let segment2 = world.segments[world.getWallSegment(wall, player.pos, true)];
 
           let diffBottom = segment2.bottom - segment.bottom;
+          let diffTop = segment.bottom - segment2.bottom;
+
           if (diffBottom > 0) {
             top = segment2.bottom;
             bottom = segment.bottom;
@@ -121,14 +123,15 @@ let Renderer = {
             tileH = segment2.bottomWallTextureTileH ? wall.length : 1;
             tileV = segment2.bottomWallTextureTileV ? diffBottom : 1;
           }
-          let diffTop = segment.bottom - segment2.bottom;
-          if (diffTop > 0) {
+          else if (diffTop > 0) {
             top = segment.top;
             bottom = segment2.top;
 
             tex = segment2.topWallTexture;
             tileH = segment2.topWallTextureTileH ? wall.length : 1;
             tileV = segment2.topWallTextureTileV ? diffTop : 1;
+          } else {
+            continue;
           }
 
         }
@@ -293,8 +296,9 @@ let Renderer = {
             let done = x / screenw;
             let lastInside = inside;
 
-            for (let i of intersections) {
-              if (lastDone < i.d * 200 && done > i.d * 200) inside = !inside;
+            for (let i = 0; i < intersections.length; i++) {
+              let int = intersections[i];
+              if (lastDone < int.d * 200 && done > int.d * 200) inside = !inside;
             }
             lastDone = done;
 
@@ -347,7 +351,7 @@ let Renderer = {
 
     for (let i = 1; i < Game.world.entities.length; i++) {
       let entity = Game.world.entities[i];
-      if (!entity || entity.owner || entity.hp < 0) continue;
+      if (!entity || entity.owner || entity.hp < 0 || entity.animal.visible == false) continue;
 
       let tex = textures[entity.animal.texture];
       let relativePos = rotateVector({x: entity.pos.x - player.pos.x, y: entity.pos.y - player.pos.y}, -player.dir.x + Math.PI / 2);
