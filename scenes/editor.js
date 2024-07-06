@@ -410,8 +410,6 @@ let Editor = {
               let wall = world.walls[j];
               if (wall == undefined) continue;
 
-              print(wall, index);
-
               if (wall.a == index) wall.a = i;
               if (wall.b == index) wall.b = i;
 
