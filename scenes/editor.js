@@ -779,15 +779,17 @@ let Editor = {
       {text: Editor.level.name, type: "header"},
 
       {text: "rename level", callback: () => {
+        let newName = prompt("New Level Name");
         let oldIndex = Editor.chapter.levels.findIndex(e => e.name == Editor.level.name);
-        Editor.level.name = prompt("New Level Name")
-        let newIndex = Editor.chapter.levels.findIndex(e => e.name == Editor.level.name);
-        if (newIndex == -1) newIndex = Editor.chapter.length;
-
+        let newIndex = Editor.chapter.levels.findIndex(e => e.name == newName);
+        Editor.level.name = newName;
+        
+        if (newIndex == -1) newIndex = Editor.chapter.levels.length;
         if (Editor.chapter.levels[oldIndex]) {
-          delete Editor.chapter.levels[oldIndex];
+          Editor.chapter.levels.splice(oldIndex, 1);
+          newIndex--;
 
-          Editor.chapter.levels[newIndex] = world.export();
+          Editor.chapter.levels[newIndex] = {name: newName, data: world.export()};
         }
 
         localStorage.setItem("editorChapters", JSON.stringify(editorChapters));
