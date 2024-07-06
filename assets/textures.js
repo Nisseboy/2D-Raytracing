@@ -25,7 +25,7 @@ let folders = [
 
   "brick/wall", "1,2,3,4,5,6,window",
 
-  "metal/wall", "1,2,3",
+  "metal/wall", "1,2,3,button",
   "metal/floor", "1",
   "metal/ceiling", "1",
 
