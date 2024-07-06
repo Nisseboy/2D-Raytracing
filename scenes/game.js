@@ -27,7 +27,7 @@ let Game = {
     requestPointerLock();
   
     Game.world.precalc();
-    player = Game.world.entities[0];
+    player = Game.world.entities.find(e => {return e.animalType == "player"});
   },
   keyPressed(e) {
     if (getKeyPressed("Slot 1")) player.slot = 0;
@@ -148,7 +148,9 @@ let Game = {
       let saveLevel = saveChapter.levels[levelIndex];
 
       WinScreen.oldBestTime = saveLevel.bestTime;
+      WinScreen.saveLevel = saveLevel;
       saveLevel.bestTime = Math.min(saveLevel.bestTime || (60 * 59 + 59), Game.frame / fps);
+      saveLevel.player = JSON.stringify(player);
 
       saveGame();
 
@@ -177,4 +179,11 @@ function parseTime(s) {
 
   return minutes + ":" + (seconds.toString().length == 1 ? "0" : "") + seconds;
 };
+
+function parsePlayer(old) {
+  old = JSON.parse(old);
+  player.hp = old.hp;
+  player.slot = old.slot;
+  player.slots = old.slots;
+}
 

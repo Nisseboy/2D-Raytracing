@@ -41,6 +41,7 @@ let WinScreen = {
     Game.world = new World(Game.level.data);
     Game.frame = 0;
     setScene(Game);
+    parsePlayer(WinScreen.saveLevel.player)
   },
   exitButton(e) {
     Game.world = undefined;
