@@ -18,6 +18,8 @@ let Game = {
   toWin: false,
   toLose: false,
 
+  frame: 0,
+
   init() {
 
   },
@@ -133,13 +135,30 @@ let Game = {
       }
     }
 
+    Game.frame++;
+
     if (Game.toWin) {
-      setScene(WinScreen);
       Game.toWin = false;
+
+      if (!save.chapters[Game.chapter.name]) save.chapters[Game.chapter.name] = {levels: []};
+      let saveChapter = save.chapters[Game.chapter.name];
+
+      let levelIndex = Game.chapter.levels.indexOf(Game.level);
+      if (!saveChapter.levels[levelIndex]) saveChapter.levels[levelIndex] = {};
+      let saveLevel = saveChapter.levels[levelIndex];
+
+      WinScreen.oldBestTime = saveLevel.bestTime;
+      saveLevel.bestTime = Math.min(saveLevel.bestTime || (60 * 59 + 59), Game.frame / fps);
+
+      saveGame();
+
+      setScene(WinScreen);
     }
     if (Game.toLose) {
-      setScene(DeathScreen);
       Game.toLose = false;
+
+
+      setScene(DeathScreen);
     }
   },
 
@@ -149,6 +168,13 @@ let Game = {
 
   stop() {
     exitPointerLock();
-  }
+  },
+};
+
+function parseTime(s) {
+  let seconds = Math.floor(s % 60);
+  let minutes = Math.floor(s / 60);
+
+  return minutes + ":" + (seconds.toString().length == 1 ? "0" : "") + seconds;
 };
 

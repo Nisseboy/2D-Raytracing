@@ -22,6 +22,7 @@ Animations can also be made and they are referenced just like textures
 let folders = [
   "ui", "crosshair,snapping,segments,plus",
   "ui/propertytabs", "walls,segments,entities",
+  "ui/medal", "1,2,3",
 
   "brick/wall", "1,2,3,4,5,6,window",
 

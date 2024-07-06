@@ -58,6 +58,7 @@ let controls = {
 };
 
 
+let save;
 
 
 function preload() {
@@ -76,6 +77,8 @@ function setup() {
     chapters.push(i);
   }
 
+  loadGame();
+
   setScene(MainMenu);
 
   //Game.chapter = chapters[0];
@@ -88,6 +91,17 @@ function setup() {
   //setScene(Editor);
   
   frameRate(fps);
+}
+
+function loadGame() {
+  save = JSON.parse(localStorage.getItem("save")) || {
+    chapters: {
+      //"chapter 1": {player: [{level1 exit state}, {level2 exit state}]}
+    }
+  };
+}
+function saveGame() {
+  localStorage.setItem("save", JSON.stringify(save));
 }
 
 function setScene(newScene) {

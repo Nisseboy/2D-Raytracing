@@ -88,7 +88,7 @@ let Renderer = {
   renderWorld() {
     let focusPlane = screenw / 2 / Math.tan(fov / 2);
     let yShear = Math.tan(player.dir.y) * focusPlane;
-    let dFactor = (Math.sin(player.bob) * player.animal.bobStrength - player.pos.z - player.animal.height + 0.5);
+    let dFactor = (Math.sin(player.bob) * player.animal.bobStrength - player.pos.z - player.animal.height + 0.5); //Z offset i don't know why it's called dFactor
     let world = Game.world;
 
     renderWalls();

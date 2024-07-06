@@ -30,6 +30,7 @@ let DeathScreen = {
   },
   restartButton(e) {
     Game.world = new World(Game.level.data);
+    Game.frame = 0;
     setScene(Game);
   },
   exitButton(e) {

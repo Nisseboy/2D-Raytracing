@@ -22,7 +22,7 @@ let MainMenu = {
   },
   newGameButton(e) {
     LevelPicker.callback = (level, chapter) => {
-      let callback = e => {Game.level = level; Game.chapter = chapter; Game.world = new World(level.data); setScene(Game)};
+      let callback = e => {Game.level = level; Game.chapter = chapter; Game.world = new World(level.data); Game.frame = 0; setScene(Game)};
 
       if (Game.world) {
         confirmPopup = {

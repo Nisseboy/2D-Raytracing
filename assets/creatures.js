@@ -26,11 +26,11 @@ let animals = {
     type: "player", 
     texture: "entities/player1",
     height: 0.65,
-    speed: 2, 
+    speed: 2.5, 
     maxHP: 100,
     slotAmount: 4, 
     bobSpeed: 0.2, 
-    bobStrength: 0.02, 
+    bobStrength: 0.04, 
     jumpStrength: 1.7
   },
 };

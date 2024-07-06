@@ -866,6 +866,10 @@ let Editor = {
         navigator.clipboard.writeText(JSON.stringify({name: Editor.level.name, data: world.export()}));
       }},
 
+      {text: "to console", callback: () => { 
+        print({name: Editor.level.name, data: world.export()});
+      }},
+
 
       {text: "new", type: "header"},
 

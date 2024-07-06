@@ -1,4 +1,6 @@
 let WinScreen = {
+  oldBestTime: undefined,
+
   start() {
     PauseScreen.start();
   },
@@ -11,6 +13,10 @@ let WinScreen = {
     Renderer.buffer = lastGameFrame.map(e=>e);
 
     Renderer.renderText("wow you're so good at this", screenw / 2, screenh * 0.2, "cc", 0, [200, 200, 50, 255]);
+    
+    if (WinScreen.oldBestTime) Renderer.renderText("old best: " + parseTime(WinScreen.oldBestTime), screenw / 2, screenh * 0.2 + 15, "cc", 0, [200, 200, 50, 255]);
+    Renderer.renderText("this time: " + parseTime(Game.frame / 60), screenw / 2, screenh * 0.2 + 25, "cc", 0, [200, 200, 50, 255]);
+
 
     buttons = [
       {
@@ -33,6 +39,7 @@ let WinScreen = {
   nextButton(e) {
     Game.level = Game.chapter.levels[Game.chapter.levels.indexOf(Game.level) + 1];
     Game.world = new World(Game.level.data);
+    Game.frame = 0;
     setScene(Game);
   },
   exitButton(e) {
