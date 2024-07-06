@@ -259,6 +259,8 @@ function deleteChapter(chapter) {
 
   if (Editor.chapter == chapter) Editor.chapterName = undefined;
 
+  if (save[chapter.name]) { delete save[chapter.name]; saveGame(); }
+
   localStorage.setItem("editorChapters", JSON.stringify(editorChapters));
 }
 
