@@ -1,5 +1,7 @@
 p5.disableFriendlyErrors = true;
 
+let editorEnabled = true;
+
 let scene;
 
 let pixelSize;
@@ -76,7 +78,7 @@ function setup() {
 
   setScene(MainMenu);
 
-  //Game.world = new World(chapters[1].levels[2].data);
+  //Game.world = new World(chapters[0].levels[1].data);
   //setScene(Game);
 
   //Editor.chapterName = "ass chapter";
@@ -150,7 +152,8 @@ function mouseDragged(e) {
 }
 
 function draw() {
-  Renderer.buffer = [];
+  Renderer.buffer = new Array(screenw * screenh * 4);
+  Renderer.depthBuffer = [];
   buttons = [];
   menuButtons = [];
   hoveredButton = undefined;
@@ -163,11 +166,11 @@ function draw() {
 
   if (confirmPopup) {
     let p = confirmPopup;
-    let text = p.text;
-    let w = text.length * 4 - 1;
+    let textt = p.text;
+    let w = textt.length * 4 - 1;
 
     Renderer.renderTexture("metal/ceiling1", screenw / 2, screenh / 2, "cc", w + 4, 5 + 13 + 4, -1, 1);
-    Renderer.renderText(text, screenw / 2, screenh / 2 - 1, "bc", -1);
+    Renderer.renderText(textt, screenw / 2, screenh / 2 - 1, "bc", -1);
     buttons.push({
       renderer: "text",
       text: "yes",

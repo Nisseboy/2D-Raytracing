@@ -7,9 +7,11 @@ let PauseScreen = {
 
   start() {
     lastGameFrame = Renderer.buffer;
-    lastGameFrame.forEach(e => {
-      e.col = e.col.map(ee => [ee[0] * 0.4, ee[1] * 0.4, ee[2] * 0.4, ee[3]]);
-    });
+    for (let i = 0; i < lastGameFrame.length; i+=4) {
+      lastGameFrame[i] *= 0.4;
+      lastGameFrame[i+1] *= 0.4;
+      lastGameFrame[i+2] *= 0.4;
+    }
   },
 
   keyPressed() {

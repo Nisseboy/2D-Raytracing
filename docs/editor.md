@@ -4,7 +4,14 @@ Each level is composed of a list of objects:
 * Vertices: These are the corners of walls and segments, create them by shift clicking, all vertices moved on top of other vertices will be merged
 * Walls: Walls need two vertices, create a wall by shift dragging from a vertex
 * Segments: These determine how a "room" looks, the height, lighting, floor, ceiling etc.
-* Entities: These can be anywhere and are things like enemies, items, rats, or barrels, create them by shift clicking on a segment
+* Entities: These can be anywhere and are things like enemies, items, rats, or barrels, create them by shift clicking on a segment, blue is the player, green is an item or pickup, yellow is an event, like level finish or sound trigger, red is everything else
+
+Entity type "types", all entities has a type like rat or player or medkit but every entity type also has a type which determines behaviour:
+* Player: Every level need exactly one player or it will not work
+* Item: An item on the floor which can be picked up by pressing F or something, you can also pick up most critters
+* Critter: Critters can be picked up and thrown and will run around erratically when on the ground
+* Pickup: Like an item but it's automatically picked upa nd used, if you walk over a medkit you will heal automatically
+* Event: These trigger something when stepped on, like a sound or completing the level
 
 
 You select objects by clicking on them, you can also ctrl+click to select multiple objects, if you drag a selected object all other selected objects will move. Once you have selected at least one object a properties window will appear, A star on any value means that the objects you have selected have different values but they will become the same once you change it:
@@ -25,7 +32,7 @@ You select objects by clicking on them, you can also ctrl+click to select multip
   * BotTexTileH: Same as with the walls
   * BotTexTileV: Same as with the walls
 * Entities:
-  * 
+  * Type: Determines which "animal" it is, for example player, rat, medkit, etc.
 
 
 There are a few buttons on the left side:

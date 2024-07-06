@@ -10,6 +10,8 @@ class World {
 
       for (let i = 0; i < this.entities.length; i++) {
         let e = this.entities[i];
+        if (!e || JSON.stringify(e) == "{}") { this.entities[i] = undefined; continue; };
+        
         this.entities[i] = new Entity(e.animalType, e.pos);
         if (e.dir) this.entities[i].dir = e.dir;
         if (e.vel) this.entities[i].vel = e.vel;
@@ -149,10 +151,15 @@ class World {
   }
 
   hasCrossedWall(wall, pos1, pos2) {
-    return this.getWallSide(wall, pos1) != this.getWallSide(wall, pos2);
+    if (this.getWallSide(wall, pos1) != this.getWallSide(wall, pos2)) {
+      let intersection = this.lineIntersect([{a: this.vertices[wall.a], b: this.vertices[wall.b]}], {a: pos1, b: pos2});
+      return intersection.length != 0;
+    }
+    return false;
   }
   hasCrossedWalls(walls, pos1, pos2) {
     for (let i = 0; i < walls.length; i++) {
+      if (!walls[i]) continue;
       if (this.hasCrossedWall(walls[i], pos1, pos2)) return walls[i];
     }
     return undefined;
@@ -170,6 +177,8 @@ class World {
       data.entities[i] = {};
       let e = data.entities[i];
       let en = this.entities[i];
+      
+      if (en == undefined) { e = undefined; continue; }
 
       e.animalType = en.animalType;
       e.pos = en.pos;

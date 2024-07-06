@@ -61,8 +61,9 @@ let Game = {
     if (Game.world.simulated) {
       for (let i in Game.world.entities) {
         let entity = Game.world.entities[i];
-        entity.update();
+        if (!entity) continue;
         
+        entity.update();
         let diff = {x: entity.pos.x - player.pos.x, y: entity.pos.y - player.pos.y}
         let sqd = diff.x * diff.x + diff.y * diff.y;
         let angle = Math.atan2(diff.y, diff.x) - player.dir.x;
@@ -113,7 +114,8 @@ let Game = {
 
           col.push([255, 0, 0, sqd / 50 * intensity]);
         }
-        Renderer.buffer.push({col: col, x: x, d: 0});
+        //Renderer.buffer.push({col: col, x: x, d: 0});
+        Renderer.bufferPush(x, 0, col);
       }
     }
   },

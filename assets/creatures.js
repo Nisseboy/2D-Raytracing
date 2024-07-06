@@ -33,7 +33,7 @@ let animals = {
     name: "rat", 
     type: "critter", 
     texture: "entities/rat1", 
-    height: 0.2,
+    height: 0.1,
     speed: 1, 
     maxHP: 5,
     slotAmount: 1, 
@@ -49,7 +49,7 @@ let items = [
 for (let i of items) {
   animals[i.name] = {
     name: i.name,
-    type: "item",
+    type: "pickup",
     texture: i.texture,
     height: 0.2,
     speed: 0,

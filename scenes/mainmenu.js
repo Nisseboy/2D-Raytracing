@@ -11,8 +11,8 @@ let MainMenu = {
     if (Game.world) menuButtons.push({text: "continue", callback: MainMenu.continueButton});
     menuButtons.push(
       {text: "play", callback: MainMenu.newGameButton},
-      {text: "editor", callback: MainMenu.editorButton},
     );
+    if (editorEnabled) menuButtons.push({text: "editor", callback: MainMenu.editorButton});
 
     
     

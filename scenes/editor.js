@@ -171,8 +171,8 @@ let Editor = {
     if (Editor.selectedSegment == undefined)
     for (let i = 0; i < world.entities.length; i++) {
       let entity = world.entities[i];
-      let animal = animals[entity.animalType];
       if (entity == undefined) continue;
+      let animal = animals[entity.animalType];
 
       let pt = toScreen(entity.pos);
 
@@ -180,7 +180,7 @@ let Editor = {
         Editor.hovered = entity;
       }
 
-      Renderer.renderPlus(pt.x, pt.y, 6, Editor.getHighlightColor(entity, animal.type == "player" ? [0, 0, 255, 255] : [255, 0, 0, 255]));
+      Renderer.renderPlus(pt.x, pt.y, 6, Editor.getHighlightColor(entity, Editor.getEntityColor(animal)));
     }
     
     for (let i = 0; i < world.walls.length; i++) {
@@ -212,9 +212,7 @@ let Editor = {
       let segment = world.segments[segmentIndex];
       if (segment == undefined || segment.walls.length == 0) continue;
 
-      for (let y = 0; y < screenh; y++) {
-        let row = [];
-        
+      for (let y = 0; y < screenh; y++) {        
         let l = toWorld(0, y);
         let r = toWorld(screenw, y);
         let luv = {u: l.x, v: l.y};
@@ -231,12 +229,26 @@ let Editor = {
         }
 
         let lastDone = 0;
+        let yStart = 0;
+        let row = [];
         for (let x = 0; x < screenw; x++) {
           let done = x / screenw;
+          let lastInside = inside;
+
           for (let i of intersections) {
             if (lastDone < i.d * 200 && done > i.d * 200) inside = !inside;
           }
           lastDone = done;
+
+          if (lastInside && !inside) {
+            Renderer.bufferPush(y, 9, row, yStart, true);
+            //Renderer.renderPoint(x, y, 0, [0, 0, 255, 255]);
+          }
+          if (!lastInside && inside) {
+            yStart = x;
+            row = [];
+            //Renderer.renderPoint(x, y, 0, [255, 0, 0, 255]);
+          }
 
           let uv = {
             u: (luv.u + (ruv.u - luv.u) * done),
@@ -267,7 +279,8 @@ let Editor = {
   
           row.push(c);
         }
-        Renderer.buffer.push({y: y, d: 9, col: row});
+        //Renderer.buffer.push({y: y, d: 9, col: row});
+        if (inside) Renderer.bufferPush(y, 9, row, yStart, true);
       }
     } 
 
@@ -525,6 +538,12 @@ let Editor = {
     setScene(Game);
   },
 
+  getEntityColor(animal) {
+    if (animal.type == "player") return [0, 0, 255, 255];
+    if (animal.type == "item" || animal.type == "pickup") return [0, 255, 0, 255];
+    if (animal.type == "event") return [255, 255, 0, 255];
+    return [255, 0, 0, 255];
+  },
   getHighlightColor(object, base = [255, 255, 255, 255]) {
     return Editor.hovered == object ? Editor.hoveredColor : Editor.selected.includes(object) ? Editor.selectedColor : base
   },
