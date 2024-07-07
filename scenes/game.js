@@ -69,26 +69,26 @@ let Game = {
     
     let closestAngle = Math.PI;
     highlighted = undefined;
-    if (Game.world.simulated) {
-      for (let i in Game.world.entities) {
-        let entity = Game.world.entities[i];
-        if (!entity) continue;
-        
-        entity.update();
-        let diff = {x: entity.pos.x - player.pos.x, y: entity.pos.y - player.pos.y}
-        let sqd = diff.x * diff.x + diff.y * diff.y;
-        let angle = Math.atan2(diff.y, diff.x) - player.dir.x;
-        if ((entity.animal.canPickUp && entity.animal.canPickUp(player)) && angle < reachAngle && sqd < reach * reach && angle < closestAngle) {
-          closestAngle = angle;
-          highlighted = entity;
-        }
+    for (let i in Game.world.entities) {
+      let entity = Game.world.entities[i];
+      if (!entity) continue;
+      
+  
+      if (Game.world.simulated) entity.update();
+      let diff = {x: entity.pos.x - player.pos.x, y: entity.pos.y - player.pos.y}
+      let sqd = diff.x * diff.x + diff.y * diff.y;
+      let angle = Math.atan2(diff.y, diff.x) - player.dir.x;
+      if ((entity.animal.canPickUp && entity.animal.canPickUp(player)) && angle < reachAngle && sqd < reach * reach && angle < closestAngle) {
+        closestAngle = angle;
+        highlighted = entity;
+      }
 
-        if (entity.animal.onTouch && sqd < reach ** 2) {
-          entity.animal.onTouch(player, entity);
-          Game.world.entities[i] = undefined;
-        }
+      if (Game.world.simulated && entity.animal.onTouch && sqd < reach ** 2) {
+        entity.animal.onTouch(player, entity);
+        Game.world.entities[i] = undefined;
       }
     }
+    
     player.update();
 
     Renderer.renderWorld();

@@ -34,7 +34,9 @@ You select objects by clicking on them, you can also ctrl+click to select multip
   * BotTexTileV: Same as with the walls
 * Entities:
   * Type: Determines which "animal" it is, for example player, rat, medkit, etc.
+  * Door: If it's an interactable for a door you need to select a wall to open or close when you interact with it
 
+If you want a door with a button you need to create an entity and set the type to a door interactable, then you select a wall for it to open and close in the properties, then put the button somewhere it's clear that the button exists, for example a wall with a button texture
 
 There are a few buttons on the left side:
 * Help brings this page up
