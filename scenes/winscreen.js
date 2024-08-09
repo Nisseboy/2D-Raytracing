@@ -10,8 +10,6 @@ let WinScreen = {
   },
   
   update() {
-    Renderer.buffer = lastGameFrame.map(e=>e);
-
     Renderer.renderText("wow you're so good at this", screenw / 2, screenh * 0.2, "cc", 0, [200, 200, 50, 255]);
     
     if (WinScreen.oldBestTime) Renderer.renderText("old best: " + parseTime(WinScreen.oldBestTime), screenw / 2, screenh * 0.2 + 15, "cc", 0, [200, 200, 50, 255]);

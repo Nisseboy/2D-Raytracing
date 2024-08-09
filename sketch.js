@@ -87,7 +87,7 @@ function setup() {
   //setScene(Game);
 
   //Editor.chapterName = "ass chapter";
-  //Editor.level = chapters[1].levels[2];
+  //Editor.loadLevel(chapters[0].levels[0]);
   //setScene(Editor);
   
   frameRate(fps);
@@ -168,8 +168,8 @@ function mouseDragged(e) {
 }
 
 function draw() {
-  Renderer.buffer = new Array(screenw * screenh * 4);
-  Renderer.depthBuffer = [];
+  Renderer.clearDisplay();
+
   buttons = [];
   menuButtons = [];
   hoveredButton = undefined;

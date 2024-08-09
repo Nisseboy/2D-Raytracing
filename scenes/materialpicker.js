@@ -9,21 +9,16 @@ let MaterialPicker = {
       wall: [],
       floor: [],
       ceiling: [],
-      entities: [],
-      items: [],
-      ui: [],
-      other: [],
     };
     let catsOrder = ["ui", "wall", "floor", "ceiling", "entities", "items"];
 
     outer: for (let i in textures) {
       for (let j of catsOrder) {
         if (i.includes(j)) {
-          cats[j].push(i);
+          if (cats[j]) cats[j].push(i);
           continue outer;
         }
       }
-      cats.other.push(i);
     }
 
     let y = MaterialPicker.scroll;

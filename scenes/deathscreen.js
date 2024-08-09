@@ -8,8 +8,6 @@ let DeathScreen = {
   },
   
   update() {
-    Renderer.buffer = lastGameFrame.map(e=>e);
-
     Renderer.renderText("you suck at this", screenw / 2, screenh * 0.2, "cc", 0, [200, 50, 50, 255]);
 
     buttons = [

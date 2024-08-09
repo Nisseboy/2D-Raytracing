@@ -2,7 +2,6 @@ let fogA = 0.5;
 let fogB = 1;
 
 let Renderer = {
-  buffer: [],
   depthBuffer: [],
 
   preload() {
@@ -95,7 +94,22 @@ let Renderer = {
     renderFloorAndCeiling();
 
     function renderWalls() {
-      for (let i = 0; i < world.walls.length; i++) {
+      let BSPOrder = world.sortBSP(player.pos);
+      let left = new Array(screenw).fill(1);
+      
+      for (let I = 0; I < BSPOrder.length; I++) {
+
+        let stop = true;
+        for (let x = 0; x < left.length; x++) {
+          if (left[x] != undefined) {
+            stop = false;
+          }
+        }
+        if (stop) break;
+
+
+        let i = BSPOrder[I];
+        
         let wall = world.walls[i];
         if (wall == undefined) continue;
 
@@ -182,6 +196,8 @@ let Renderer = {
           if (relativeAngle < -fov || relativeAngle > fov) data.x = undefined;
         }
 
+        if (l.u == undefined || r.u == undefined || top == bottom) continue;
+
         if (l.x > r.x) [l, r] = [r, l];
         for (let x = l.x; x < r.x; x++) {
           let done = (x - l.x) / (r.x - l.x);
@@ -233,6 +249,10 @@ let Renderer = {
 
           //Renderer.buffer.push({x: x, d: d, col: col});
           Renderer.bufferPush(x, d, col, yStart);
+          
+          if (left[x]) {
+            if (!tex.transparent && !wall.divider) left[x] = undefined;
+          }
         }
       }
     }
@@ -271,17 +291,20 @@ let Renderer = {
   
           let drawingCeiling = (y + yShear) < screenh / 2;
           let d;
+          
+          let scaling = 1 / 0.695;
           if (drawingCeiling) {
             let size = (screenh * 0.005 - y * 0.01 - yShear * 0.01) / (screenh * -0.005 + dFactor + screenh * top * 0.01);
-            d = 1 / (size / 0.01 / focusPlane);
+            d = focusPlane * 0.01 / size;
+            scaling = 1 / 0.73;
           } else {
             let size = ((y + yShear) * 2 - screenh) / (screenh - dFactor * 200 - screenh * bottom * 2);
-            d = 1 / (size / 0.01 / focusPlane);
+            d = focusPlane * 0.01 / size;
           }
+          scaling /= 80 / focusPlane;
   
           let fog = Math.max(Math.pow(d, fogA), fogB);
-    
-          let scaling = 1 / 0.71;
+
           let luv = {u: Math.cos(langle) * d * scaling + player.pos.x, v: Math.sin(langle) * d * scaling + player.pos.y};
           let ruv = {u: Math.cos(rangle) * d * scaling + player.pos.x, v: Math.sin(rangle) * d * scaling + player.pos.y};
   
@@ -291,7 +314,7 @@ let Renderer = {
           let lastDone = 0;
           let yStart = 0;
           let row = [];
-
+          
           for (let x = 0; x < screenw; x++) {
             let done = x / screenw;
             let lastInside = inside;
@@ -496,7 +519,7 @@ let Renderer = {
     Renderer.renderPoint(X, Y-1, d, c);
     Renderer.renderPoint(X, Y+1, d, c);
   },
-
+  
   bufferPush(X, d, col, yStart = 0, row = false, ) {
     for (let Y = 0; Y < col.length; Y++) {
       let x = X;
@@ -514,17 +537,20 @@ let Renderer = {
       Renderer.depthBuffer[k] = d;
 
       k *= 4;
-      Renderer.buffer[k++] = col[Y][0];
-      Renderer.buffer[k++] = col[Y][1];
-      Renderer.buffer[k++] = col[Y][2];
-      Renderer.buffer[k++] = 255;
+      
+      Renderer.img.pixels[k++] = col[Y][0]
+      Renderer.img.pixels[k++] = col[Y][1]
+      Renderer.img.pixels[k++] = col[Y][2]
+      Renderer.img.pixels[k++] = 255
     }
   },
-
+  clearDisplay() {
+    Renderer.img.pixels.fill(0);
+    Renderer.depthBuffer = [];
+  },
   displayRender() {
-    for (let i = 0; i < Renderer.buffer.length; i++) {
-      Renderer.img.pixels[i] = ((i + 1) % 4 == 0) ? 255 : (Renderer.buffer[i] || 0);
-    }
+    fill(0)
+    rect(0, 0, width, height);
 
     Renderer.img.updatePixels();
     noSmooth();

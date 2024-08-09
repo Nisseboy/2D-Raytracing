@@ -7,6 +7,7 @@ class World {
       this.walls = world.walls;
       this.segments = world.segments;
       this.entities = world.entities;
+      this.BSP = world.BSP;
 
       for (let i = 0; i < this.entities.length; i++) {
         let e = this.entities[i];
@@ -84,6 +85,7 @@ class World {
         if (i[j[0]] == undefined) 
           i[j[0]] = j[1]
     }
+    this.updateBSP();
   }
   
   lineIntersect(lines, l2) {
@@ -166,12 +168,78 @@ class World {
     return undefined;
   }
 
+  updateBSP() {
+    const partition = (walls, wall) => {
+      let result = {before: [], i: this.walls.indexOf(wall), after: []};
+
+      for (let I = 0; I < walls.length; I++) {
+        let i = walls[I];
+        let wall2 = this.walls[i];
+        if (wall2 == wall) continue;
+        
+        let v1 = wall2.a;
+        let v2 = wall2.b;
+
+        let isBefore = false;
+        let isAfter = false;
+        
+        if (this.getWallSide(wall, this.vertices[v1])) isBefore = true; else isAfter = true;
+        if (this.getWallSide(wall, this.vertices[v2])) isBefore = true; else isAfter = true;
+
+        if (isBefore) result.before.push(i);
+        if (isAfter) result.after.push(i);
+      }
+
+      return result;
+    }
+
+    const partitionFully = (walls) => {
+      if (walls.length <= 1) return {before: [], i: walls[0], after: []};
+
+      let bestPart;
+      let bestDiff = 10000;
+
+      for (let I = 0; I < walls.length; I++) {
+        let i = walls[I];
+        let wall = this.walls[i];
+        
+        let part = partition(walls, wall);
+
+        let diff = Math.abs(part.before.length - part.after.length);
+
+        if (diff < bestDiff) {
+          bestDiff = diff;
+          bestPart = part;
+        }
+      }
+
+      if (bestPart) return {before: partitionFully(bestPart.before), i: bestPart.i, after: partitionFully(bestPart.after)};
+    }
+
+    this.BSP = partitionFully(this.walls.filter(e => e).map(e => this.walls.indexOf(e)));
+  }
+
+  sortBSP(pos, BSP) {
+    if (!BSP) BSP = this.BSP;
+    if (BSP.i == undefined) return [];
+    
+    let before = this.sortBSP(pos, BSP.before);
+    let i = BSP.i;
+    let after = this.sortBSP(pos, BSP.after);
+
+    if (this.getWallSide(this.walls[i], pos)) return [...before, i, ...after];
+    else return [...after, i, ...before];
+    
+  }
+
   export() {
     let data = {};
     data.textures = this.textures;
     data.vertices = this.vertices;
     data.walls = this.walls;
     data.segments = this.segments;
+
+    data.BSP = this.BSP;
 
     data.entities = [];
     for (let i = 0; i < this.entities.length; i++) {
